@@ -1,0 +1,109 @@
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-08_12-53-31
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Wrote 18 flight settings to DataStore
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task sphere_pitch is disabled in config, skipping registration
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task photodiode is disabled in config, skipping registration
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Starting ALTAIR V2 flight computer
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Starting 8 task(s)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.gps_driver[0m  GpsDriver: opened /dev/i2c-1 (fd=6)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: VESC connected on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver ready on /dev/i2c-1
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: initializing — writing all event.* keys to 0
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.mcp23017[0m  MCP23017: opened bus 1 address 0x24
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport opened /dev/ttyUSB0 @ 57600 baud
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger started
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-08_12-53-31
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport opened
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.ina3221_driver[0m  INA3221Driver: opened /dev/i2c-1 (fd=19)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog started (ping interval 15.0s)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: opened 12 CSV files
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: heartbeat received (system 1, component 0)
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=30 at 50.0 Hz
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=31 at 50.0 Hz
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=24 at 5.0 Hz
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=32 at 5.0 Hz
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=29 at 5.0 Hz
+2026-05-08T12:53:31  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=74 at 5.0 Hz
+2026-05-08T12:53:35  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T12:53:35  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=13 status=0)
+2026-05-08T12:53:37  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ArmCommandPacket → command.arm = 1.0
+2026-05-08T12:53:37  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC0 cmd_seq=0 status=0)
+2026-05-08T12:53:37  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: ARM command received — starting arm checks
+2026-05-08T12:53:37  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: arm checks passed — advancing to STAGE_ARMED
+2026-05-08T12:53:37  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: stage 0 → 1
+2026-05-08T12:53:39  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: LaunchOkCommandPacket → command.launch_ok = 1.0
+2026-05-08T12:53:39  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC1 cmd_seq=0 status=0)
+2026-05-08T12:53:39  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: LAUNCH_OK received — advancing to STAGE_LAUNCH (ref alt=76.6 m)
+2026-05-08T12:53:39  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: LAUNCH + altitude reached — spinning up reaction wheel
+2026-05-08T12:53:40  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T12:53:40  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=14 status=0)
+2026-05-08T12:53:44  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: stabilizing payload
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.730815, yaw_rate: 0.003893, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.744280, yaw_rate: -0.000194, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.741453, yaw_rate: 0.002155, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.740989, yaw_rate: -0.001572, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.725125, yaw_rate: -0.001877, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.729381, yaw_rate: 0.000061, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.730152, yaw_rate: -0.001228, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.736740, yaw_rate: 0.001105, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.718154, yaw_rate: -0.001734, control signal: 4300.000000
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T12:53:45  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=15 status=0)
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.731357, yaw_rate: 0.005649, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.742875, yaw_rate: 0.001026, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.743567, yaw_rate: -0.001233, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.738342, yaw_rate: -0.000761, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.734073, yaw_rate: 0.003088, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.732015, yaw_rate: -0.000988, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.730951, yaw_rate: 0.001462, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.734478, yaw_rate: 0.004445, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.731655, yaw_rate: -0.000419, control signal: 4300.000000
+2026-05-08T12:53:46  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.694451, yaw_rate: -0.005589, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.688378, yaw_rate: 0.004119, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.690526, yaw_rate: -0.000606, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.683614, yaw_rate: -0.005584, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.668252, yaw_rate: -0.002844, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.660881, yaw_rate: 0.001672, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.657586, yaw_rate: 0.003099, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.656176, yaw_rate: -0.001316, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.657865, yaw_rate: 0.001591, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.661872, yaw_rate: 0.002152, control signal: 4300.000000
+2026-05-08T12:53:47  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.667740, yaw_rate: 0.000105, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.663477, yaw_rate: -0.001705, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.664086, yaw_rate: 0.001563, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.660322, yaw_rate: 0.001872, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.647436, yaw_rate: -0.003835, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.652450, yaw_rate: -0.000677, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.658767, yaw_rate: -0.000464, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.655910, yaw_rate: -0.002388, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.657067, yaw_rate: -0.002178, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.lifecycle[0m  Received SIGINT — initiating graceful shutdown
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Shutdown event received — stopping all tasks
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog stopped
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.659048, yaw_rate: 0.004369, control signal: 4300.000000
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Stopping all tasks
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: all CSV files closed
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger stopped
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power stopped
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage stopped
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver stopped
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport closed
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport closed
+2026-05-08T12:53:48  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry stopped
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.665901, yaw_rate: 0.003391, control signal: 4300.000000
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.677407, yaw_rate: -0.002552, control signal: 4300.000000
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver closed
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps stopped
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connection closed
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink stopped
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  yaw_error: 1.675888, yaw_rate: 0.002298, control signal: 4300.000000
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel stopped
+2026-05-08T12:53:49  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  ALTAIR V2 shutdown complete

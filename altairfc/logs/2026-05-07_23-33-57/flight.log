@@ -1,0 +1,56 @@
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-07_23-33-57
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Wrote 18 flight settings to DataStore
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task sphere_pitch is disabled in config, skipping registration
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task photodiode is disabled in config, skipping registration
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Starting ALTAIR V2 flight computer
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Starting 8 task(s)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.gps_driver[0m  GpsDriver: opened /dev/i2c-1 (fd=8)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver ready on /dev/i2c-1
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: VESC connected on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: initializing — writing all event.* keys to 0
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.mcp23017[0m  MCP23017: opened bus 1 address 0x24
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-07_23-33-57
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger started
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.ina3221_driver[0m  INA3221Driver: opened /dev/i2c-1 (fd=24)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport opened /dev/ttyUSB0 @ 57600 baud
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog started (ping interval 15.0s)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport opened
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: opened 12 CSV files
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: heartbeat received (system 1, component 0)
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=30 at 50.0 Hz
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=31 at 50.0 Hz
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=24 at 5.0 Hz
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=32 at 5.0 Hz
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=29 at 5.0 Hz
+2026-05-07T23:33:57  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: requested MSG_ID=74 at 5.0 Hz
+2026-05-07T23:33:59  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-07T23:33:59  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=205 status=0)
+2026-05-07T23:34:04  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-07T23:34:04  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=206 status=0)
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.lifecycle[0m  Received SIGINT — initiating graceful shutdown
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Shutdown event received — stopping all tasks
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Stopping all tasks
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: all CSV files closed
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport closed
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport closed
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver closed
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connection closed
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink stopped
+2026-05-07T23:34:07  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel stopped
+2026-05-07T23:34:08  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  ALTAIR V2 shutdown complete
