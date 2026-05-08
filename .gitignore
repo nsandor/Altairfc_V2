@@ -18,4 +18,5 @@ __pycache__/
 
 
 # logs
-./altairfc/logs/
+./altairfc/logs/*
+./altairfc/logs
