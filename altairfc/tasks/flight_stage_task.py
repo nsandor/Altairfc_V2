@@ -400,9 +400,9 @@ class FlightStageTask(BaseTask):
             failures.append("mm_vesc_missing")
 
         # GPS: module must be responding
-        gps_active = int(self.datastore.read("gps.active", default=0))
-        if not gps_active:
-            failures.append("gps_not_active")
+        # gps_active = int(self.datastore.read("gps.active", default=0))
+        # if not gps_active:
+        #     failures.append("gps_not_active")
 
         if failures:
             logger.debug("FlightStageTask: preflight failures: %s", ", ".join(failures))
