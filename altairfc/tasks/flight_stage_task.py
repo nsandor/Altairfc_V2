@@ -395,9 +395,9 @@ class FlightStageTask(BaseTask):
         if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
             failures.append("rw_vesc_missing")
 
-        # MM VESC: rpm key must exist and be fresh
+        # MM VESC: rpm key must exist and be fresh — skip if MM task is not running
         mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
             failures.append("mm_vesc_missing")
 
         # GPS: module must be responding
@@ -434,8 +434,9 @@ class FlightStageTask(BaseTask):
         if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
             failures.append("rw_vesc_not_reporting")
 
+        # MM VESC — skip if MM task is not running
         mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
             failures.append("mm_vesc_not_reporting")
 
         return len(failures) == 0, failures
