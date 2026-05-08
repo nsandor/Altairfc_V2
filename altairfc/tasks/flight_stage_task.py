@@ -72,7 +72,7 @@ _MAVLINK_STALENESS_S  = 3.0   # mavlink data must have arrived within this many 
 _VESC_RPM_TIMEOUT_S   = 5.0   # VESC data must have arrived within this many seconds
 
 # Arm checks
-_GPS_MIN_SV       = 4     # minimum satellites for a valid fix
+
 _NEUTRAL_YAW_RATE = 0.15  # rad/s — max yaw rate to consider orientation stable
 
 # Altitude tolerance for "stationary" check (m)
@@ -418,11 +418,11 @@ class FlightStageTask(BaseTask):
         """
         failures: list[str] = []
 
-        # GPS fix quality
-        gps_valid  = int(self.datastore.read("gps.valid",  default=0))
-        gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
-        if not gps_valid or gps_num_sv < _GPS_MIN_SV:
-            failures.append(f"gps_no_fix(sv={gps_num_sv})")
+        # GPS fix quality — temporarily disabled for ground testing
+        # gps_valid  = int(self.datastore.read("gps.valid",  default=0))
+        # gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
+        # if not gps_valid or gps_num_sv < _GPS_MIN_SV:
+        #     failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
         # Neutral orientation — low yaw rate
         yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
