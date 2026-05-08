@@ -23,5 +23,5 @@ __pycache__/
 =======
 
 # logs
-./altairfc/logs/
->>>>>>> b62fa30 (test)
+./altairfc/logs/*
+./altairfc/logs
