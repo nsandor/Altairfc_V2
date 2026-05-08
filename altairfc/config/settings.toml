@@ -19,11 +19,11 @@ enabled = true
 period_s = 0.05   # 20 Hz
 
 [tasks.mm_control]
-enabled = true
+enabled = false
 period_s = 5.0    # 0.2 Hz
 
 [tasks.sphere_pitch]
-enabled = true
+enabled = false
 period_s = 1.0
 
 [tasks.photodiode]
@@ -65,7 +65,7 @@ landing_fraction              = 0.05      # landing declared when alt ≤ this �
 recovery_stationary_s         = 10.0      # seconds of altitude stationary (±2 m) → recovery
 termination_confirm_drop_m    = 100.0     # altitude drop required to confirm cutdown worked (m)
 termination_confirm_window_s  = 30.0      # time window for termination confirmation (s)
-pointing_activate_altitude_m  = 18000.0   # GPS MSL altitude (m) above which motors activate
+pointing_activate_altitude_m  = 0.0   # GPS MSL altitude (m) above which motors activate
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
 
 [system]
