@@ -1,0 +1,104 @@
+2026-03-24T09:54:58  INFO      main  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-58
+2026-03-24T09:54:58  INFO      main  Wrote 18 flight settings to DataStore
+2026-03-24T09:54:58  INFO      core.scheduler  Task sphere_pitch is disabled in config, skipping registration
+2026-03-24T09:54:58  INFO      core.scheduler  Task photodiode is disabled in config, skipping registration
+2026-03-24T09:54:58  INFO      main  Starting ALTAIR V2 flight computer
+2026-03-24T09:54:58  INFO      core.scheduler  Starting 8 task(s)
+2026-03-24T09:54:58  INFO      core.task_base  Task reaction_wheel started
+2026-03-24T09:54:58  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:54:58  INFO      core.task_base  Task mavlink started
+2026-03-24T09:54:58  INFO      core.task_base  Task gps started
+2026-03-24T09:54:58  INFO      drivers.gps_driver  GpsDriver: opened /dev/i2c-1 (fd=5)
+2026-03-24T09:54:58  INFO      tasks.gps_task  GpsTask: driver ready on /dev/i2c-1
+2026-03-24T09:54:58  INFO      drivers.mcp23017  MCP23017: opened bus 1 address 0x24
+2026-03-24T09:54:58  INFO      core.task_base  Task telemetry started
+2026-03-24T09:54:58  INFO      tasks.command_receiver_task  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-03-24T09:54:58  INFO      core.task_base  Task command_receiver started
+2026-03-24T09:54:58  INFO      tasks.flight_stage_task  FlightStageTask: initializing — writing all event.* keys to 0
+2026-03-24T09:54:58  INFO      core.task_base  Task flight_stage started
+2026-03-24T09:54:58  INFO      core.task_base  Task power started
+2026-03-24T09:54:58  INFO      tasks.datalogger_task  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-58
+2026-03-24T09:54:58  INFO      core.task_base  Task datalogger started
+2026-03-24T09:54:58  INFO      core.watchdog  Watchdog started (ping interval 15.0s)
+2026-03-24T09:54:58  INFO      drivers.ina3221_driver  INA3221Driver: opened /dev/i2c-1 (fd=12)
+2026-03-24T09:54:58  INFO      telemetry.transport  SerialTransport opened /dev/ttyUSB0 @ 57600 baud
+2026-03-24T09:54:58  INFO      tasks.datalogger_task  DataLoggerTask: opened 12 CSV files
+2026-03-24T09:54:58  INFO      telemetry.telemetry_task  TelemetryTask: transport opened
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: heartbeat received (system 1, component 0)
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=30 at 50.0 Hz
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=31 at 50.0 Hz
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=24 at 5.0 Hz
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=32 at 5.0 Hz
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=29 at 5.0 Hz
+2026-03-24T09:54:58  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=74 at 5.0 Hz
+2026-05-08T15:56:34  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:56:38  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:56:38  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=0 status=0)
+2026-05-08T15:56:39  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:56:43  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:56:43  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=1 status=0)
+2026-05-08T15:56:44  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:56:48  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:56:48  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=2 status=0)
+2026-05-08T15:56:49  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:56:53  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:56:53  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=3 status=0)
+2026-05-08T15:56:54  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:56:58  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:56:58  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=4 status=0)
+2026-05-08T15:56:59  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:03  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:03  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=5 status=0)
+2026-05-08T15:57:04  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:08  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:08  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=6 status=0)
+2026-05-08T15:57:09  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:13  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:13  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=7 status=0)
+2026-05-08T15:57:14  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:18  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:18  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=8 status=0)
+2026-05-08T15:57:19  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:23  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:23  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=9 status=0)
+2026-05-08T15:57:24  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:28  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:28  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=10 status=0)
+2026-05-08T15:57:29  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:33  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:33  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=11 status=0)
+2026-05-08T15:57:34  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:38  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:38  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=12 status=0)
+2026-05-08T15:57:39  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:43  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:43  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=13 status=0)
+2026-05-08T15:57:44  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:48  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:48  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=14 status=0)
+2026-05-08T15:57:49  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:53  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:53  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=15 status=0)
+2026-05-08T15:57:54  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:57:58  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:57:58  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=16 status=0)
+2026-05-08T15:57:59  WARNING   tasks.rw_task  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-08T15:58:00  INFO      core.lifecycle  Received SIGTERM — initiating graceful shutdown
+2026-05-08T15:58:00  INFO      main  Shutdown event received — stopping all tasks
+2026-05-08T15:58:00  INFO      core.watchdog  Watchdog stopped
+2026-05-08T15:58:00  INFO      core.scheduler  Stopping all tasks
+2026-05-08T15:58:00  INFO      tasks.datalogger_task  DataLoggerTask: all CSV files closed
+2026-05-08T15:58:00  INFO      core.task_base  Task datalogger stopped
+2026-05-08T15:58:00  INFO      core.task_base  Task power stopped
+2026-05-08T15:58:00  INFO      core.task_base  Task flight_stage stopped
+2026-05-08T15:58:00  INFO      core.task_base  Task command_receiver stopped
+2026-05-08T15:58:00  INFO      telemetry.transport  SerialTransport closed
+2026-05-08T15:58:00  INFO      telemetry.telemetry_task  TelemetryTask: transport closed
+2026-05-08T15:58:00  INFO      core.task_base  Task telemetry stopped
+2026-05-08T15:58:00  INFO      tasks.gps_task  GpsTask: driver closed
+2026-05-08T15:58:00  INFO      core.task_base  Task gps stopped
+2026-05-08T15:58:00  INFO      tasks.mavlink_task  MavlinkTask: connection closed
+2026-05-08T15:58:00  INFO      core.task_base  Task mavlink stopped
+2026-05-08T15:58:00  INFO      core.task_base  Task reaction_wheel stopped
+2026-05-08T15:58:01  INFO      main  ALTAIR V2 shutdown complete
