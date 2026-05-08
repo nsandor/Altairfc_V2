@@ -89,6 +89,8 @@ class RWTask(BaseTask):
 
         quat, pos, gs_pos, yaw_rate, yaw = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
+        self.datastore.write("pointing.target_heading_rad", yaw + az_err)
+        self.datastore.write("pointing.heading_error_rad",  az_err)
         self._store()
         control_signal = self.controller.output(yaw, yaw_rate) + 2150.0
         logger.info("yaw_error: %f, yaw_rate: %f, control signal: %f", yaw, yaw_rate, control_signal)

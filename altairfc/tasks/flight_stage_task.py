@@ -7,6 +7,9 @@ from collections import deque
 from config.settings import FlightStageConfig
 from core.datastore import DataStore
 from core.task_base import BaseTask
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from core.scheduler import TaskScheduler
 
 logger = logging.getLogger(__name__)
 
@@ -81,8 +84,11 @@ _STATIONARY_BAND_M = 2.0
 # Minimum climb rate to still consider ascending (m/s)
 _ASCENDING_RATE_THRESHOLD = 0.5
 
-# How long climb rate must be below threshold to declare burst (s)
-_BURST_RATE_WINDOW_S = 5.0
+# Sustained negative climb required to declare burst (s)
+_BURST_RATE_WINDOW_S = 15.0
+
+# Lock-out period after entering STAGE_ASCENT before burst/termination checks run (s)
+_ASCENT_LOCKOUT_S = 600.0  # 10 minutes
 
 # Altitude gain required over 10 s to confirm launch (m)
 _LAUNCH_GAIN_M   = 20.0
@@ -117,9 +123,11 @@ class FlightStageTask(BaseTask):
         period_s: float,
         datastore: DataStore,
         config: FlightStageConfig,
+        scheduler: "TaskScheduler | None" = None,
     ) -> None:
         super().__init__(name, period_s, datastore)
         self._cfg = config
+        self._scheduler = scheduler
 
         # State machine
         self._stage: int = STAGE_PREFLIGHT
@@ -135,8 +143,9 @@ class FlightStageTask(BaseTask):
         self._cutdown_triggered_alt: float | None = None
         self._cutdown_trigger_time: float | None = None
 
-        # Burst (slow-rate) detection
+        # Burst detection
         self._low_rate_since: float | None = None
+        self._ascent_entered_time: float | None = None
 
         # Recovery stationary tracking
         self._stationary_ref_alt: float | None = None
@@ -297,52 +306,49 @@ class FlightStageTask(BaseTask):
             if self._detect_ascent(baro_alt, cfg):
                 self._write_flag("ascent_active", 1)
                 self._measured_apogee = baro_alt
+                self._ascent_entered_time = now
                 return STAGE_ASCENT
 
         elif stage == STAGE_ASCENT:
-            # Fire cutdown if above termination altitude
-            if (
-                baro_alt >= cfg.termination_altitude_m
-                and not self._flags["cutdown_fired"]
-            ):
+            ascent_elapsed = now - (self._ascent_entered_time or now)
+            in_lockout = ascent_elapsed < _ASCENT_LOCKOUT_S
+
+            # Fire cutdown if above termination altitude (always active, ignores lockout)
+            if baro_alt >= cfg.termination_altitude_m and not self._flags["cutdown_fired"]:
                 logger.warning(
                     "FlightStageTask: termination altitude %.1f m reached — firing cutdown",
                     cfg.termination_altitude_m,
                 )
-                _hw_fire_cutdown()  # TODO: stub — replace with real GPIO once pin is assigned
+                _hw_fire_cutdown()
                 self._write_flag("cutdown_fired", 1)
                 self._cutdown_triggered_alt = baro_alt
                 self._cutdown_trigger_time = now
 
-            # Check termination confirmation (significant drop after cutdown)
-            if self._flags["cutdown_fired"] and self._cutdown_triggered_alt is not None:
-                drop = self._cutdown_triggered_alt - baro_alt
-                elapsed = now - (self._cutdown_trigger_time or now)
-                if (
-                    drop >= cfg.termination_confirm_drop_m
-                    and elapsed <= cfg.termination_confirm_window_s
-                ):
-                    self._write_flag("termination_fired", 1)
-                    return STAGE_TERMINATION
-
-                # Cutdown window expired without confirmation → treat as burst
-                if elapsed > cfg.termination_confirm_window_s:
-                    self._write_flag("burst_detected", 1)
-                    return STAGE_BURST
-
-            # Natural burst: in burst altitude zone and climbing very slowly
-            in_burst_zone = baro_alt >= (
-                cfg.burst_altitude_m - cfg.burst_altitude_uncertainty_m
-            )
-            if in_burst_zone and not self._flags["cutdown_fired"]:
-                if climb < _ASCENDING_RATE_THRESHOLD:
-                    if self._low_rate_since is None:
-                        self._low_rate_since = now
-                    elif now - self._low_rate_since >= _BURST_RATE_WINDOW_S:
+            if not in_lockout:
+                # Check termination confirmation (significant drop after cutdown)
+                if self._flags["cutdown_fired"] and self._cutdown_triggered_alt is not None:
+                    drop = self._cutdown_triggered_alt - baro_alt
+                    elapsed = now - (self._cutdown_trigger_time or now)
+                    if drop >= cfg.termination_confirm_drop_m and elapsed <= cfg.termination_confirm_window_s:
+                        self._write_flag("termination_fired", 1)
+                        self._stop_motor_tasks()
+                        return STAGE_TERMINATION
+                    if elapsed > cfg.termination_confirm_window_s:
                         self._write_flag("burst_detected", 1)
+                        self._stop_motor_tasks()
                         return STAGE_BURST
-                else:
-                    self._low_rate_since = None
+
+                # Burst: sustained negative climb rate regardless of altitude
+                if not self._flags["cutdown_fired"]:
+                    if climb < -_ASCENDING_RATE_THRESHOLD:
+                        if self._low_rate_since is None:
+                            self._low_rate_since = now
+                        elif now - self._low_rate_since >= _BURST_RATE_WINDOW_S:
+                            self._write_flag("burst_detected", 1)
+                            self._stop_motor_tasks()
+                            return STAGE_BURST
+                    else:
+                        self._low_rate_since = None
 
         elif stage in (STAGE_TERMINATION, STAGE_BURST):
             if self._measured_apogee > 0:
@@ -459,6 +465,15 @@ class FlightStageTask(BaseTask):
     # ------------------------------------------------------------------
     # Utilities
     # ------------------------------------------------------------------
+
+    def _stop_motor_tasks(self) -> None:
+        if self._scheduler is None:
+            return
+        for task_name in ("reaction_wheel", "momentum_management"):
+            task = self._scheduler.get_task(task_name)
+            if task is not None and task.is_alive:
+                logger.info("FlightStageTask: stopping %s", task_name)
+                task.stop()
 
     def _write_flag(self, key: str, value: int) -> None:
         """Write event.{key} to DataStore only if the value changed."""
