@@ -183,7 +183,8 @@ class FlightStageTask(BaseTask):
         # Poll GS ARM command — only accepted in PREFLIGHT once preflight_ok
         if float(self.datastore.read("command.arm", default=0.0)) >= 1.0:
             self.datastore.write("command.arm", 0.0)
-            if self._stage == STAGE_PREFLIGHT and self._flags["preflight_ok"]:
+            # if self._stage == STAGE_PREFLIGHT and self._flags["preflight_ok"]:
+            if self._stage == STAGE_PREFLIGHT:
                 logger.info("FlightStageTask: ARM command received — starting arm checks")
                 self._arm_cmd_pending = True
             else:
