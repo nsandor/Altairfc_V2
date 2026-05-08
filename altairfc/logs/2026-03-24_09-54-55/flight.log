@@ -1,0 +1,75 @@
+2026-03-24T09:54:55  INFO      main  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-55
+2026-03-24T09:54:55  INFO      main  Wrote 18 flight settings to DataStore
+2026-03-24T09:54:55  INFO      core.scheduler  Task sphere_pitch is disabled in config, skipping registration
+2026-03-24T09:54:55  INFO      core.scheduler  Task photodiode is disabled in config, skipping registration
+2026-03-24T09:54:55  INFO      main  Starting ALTAIR V2 flight computer
+2026-03-24T09:54:55  INFO      core.scheduler  Starting 8 task(s)
+2026-03-24T09:54:55  INFO      core.task_base  Task reaction_wheel started
+2026-03-24T09:54:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:54:55  INFO      core.task_base  Task mavlink started
+2026-03-24T09:54:55  INFO      core.task_base  Task gps started
+2026-03-24T09:54:55  INFO      drivers.gps_driver  GpsDriver: opened /dev/i2c-1 (fd=5)
+2026-03-24T09:54:55  INFO      core.task_base  Task telemetry started
+2026-03-24T09:54:55  INFO      tasks.gps_task  GpsTask: driver ready on /dev/i2c-1
+2026-03-24T09:54:55  INFO      tasks.command_receiver_task  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-03-24T09:54:55  INFO      core.task_base  Task command_receiver started
+2026-03-24T09:54:55  INFO      tasks.flight_stage_task  FlightStageTask: initializing — writing all event.* keys to 0
+2026-03-24T09:54:55  INFO      core.task_base  Task flight_stage started
+2026-03-24T09:54:55  INFO      drivers.mcp23017  MCP23017: opened bus 1 address 0x24
+2026-03-24T09:54:55  INFO      core.task_base  Task power started
+2026-03-24T09:54:55  INFO      core.task_base  Task datalogger started
+2026-03-24T09:54:55  INFO      tasks.rw_task  RWTask: VESC connected on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0
+2026-03-24T09:54:55  INFO      tasks.datalogger_task  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-55
+2026-03-24T09:54:55  INFO      drivers.ina3221_driver  INA3221Driver: opened /dev/i2c-1 (fd=8)
+2026-03-24T09:54:55  INFO      core.watchdog  Watchdog started (ping interval 15.0s)
+2026-03-24T09:54:55  INFO      telemetry.transport  SerialTransport opened /dev/ttyUSB0 @ 57600 baud
+2026-03-24T09:54:55  INFO      telemetry.telemetry_task  TelemetryTask: transport opened
+2026-03-24T09:54:55  INFO      tasks.datalogger_task  DataLoggerTask: opened 12 CSV files
+2026-03-24T09:55:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:20  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:25  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:30  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:35  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:40  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:45  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:55:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:56:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:56:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:56:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:56:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:53:40  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:53:45  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:53:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:53:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:20  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:25  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:30  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:35  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:40  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:45  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:54:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:02  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:55:02  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=31 status=0)
+2026-05-08T15:55:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:07  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:55:07  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=32 status=0)
+2026-05-08T15:55:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:12  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:55:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=33 status=0)
+2026-05-08T15:55:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:17  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:55:17  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=34 status=0)
+2026-05-08T15:55:20  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T15:55:22  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T15:55:22  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=35 status=0)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   

@@ -1,0 +1,366 @@
+2026-03-24T09:54:50  INFO      main  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-50
+2026-03-24T09:54:50  INFO      main  Wrote 18 flight settings to DataStore
+2026-03-24T09:54:50  INFO      core.scheduler  Task sphere_pitch is disabled in config, skipping registration
+2026-03-24T09:54:50  INFO      core.scheduler  Task photodiode is disabled in config, skipping registration
+2026-03-24T09:54:50  INFO      main  Starting ALTAIR V2 flight computer
+2026-03-24T09:54:50  INFO      core.scheduler  Starting 8 task(s)
+2026-03-24T09:54:50  INFO      core.task_base  Task reaction_wheel started
+2026-03-24T09:54:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-03-24T09:54:50  INFO      core.task_base  Task mavlink started
+2026-03-24T09:54:50  INFO      core.task_base  Task gps started
+2026-03-24T09:54:50  INFO      drivers.gps_driver  GpsDriver: opened /dev/i2c-1 (fd=5)
+2026-03-24T09:54:50  INFO      tasks.gps_task  GpsTask: driver ready on /dev/i2c-1
+2026-03-24T09:54:50  INFO      core.task_base  Task telemetry started
+2026-03-24T09:54:50  INFO      tasks.rw_task  RWTask: VESC connected on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0
+2026-03-24T09:54:50  INFO      tasks.command_receiver_task  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-03-24T09:54:50  INFO      core.task_base  Task command_receiver started
+2026-03-24T09:54:50  INFO      tasks.flight_stage_task  FlightStageTask: initializing — writing all event.* keys to 0
+2026-03-24T09:54:50  INFO      core.task_base  Task flight_stage started
+2026-03-24T09:54:50  INFO      drivers.mcp23017  MCP23017: opened bus 1 address 0x24
+2026-03-24T09:54:50  INFO      core.task_base  Task power started
+2026-03-24T09:54:50  INFO      core.task_base  Task datalogger started
+2026-03-24T09:54:50  INFO      tasks.datalogger_task  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-03-24_09-54-50
+2026-03-24T09:54:50  INFO      core.watchdog  Watchdog started (ping interval 15.0s)
+2026-03-24T09:54:50  INFO      drivers.ina3221_driver  INA3221Driver: opened /dev/i2c-1 (fd=13)
+2026-03-24T09:54:50  INFO      tasks.datalogger_task  DataLoggerTask: opened 12 CSV files
+2026-03-24T09:54:50  INFO      telemetry.transport  SerialTransport opened /dev/ttyUSB0 @ 57600 baud
+2026-03-24T09:54:50  INFO      telemetry.telemetry_task  TelemetryTask: transport opened
+2026-03-24T09:54:54  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-03-24T09:54:54  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=42 status=0)
+2026-03-24T09:54:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:07  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:07  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=43 status=0)
+2026-05-08T14:28:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:11  INFO      tasks.command_receiver_task  CommandReceiverTask: UpdateSetting field_id=16 → settings.pointing_activate_altitude_m = 50.0
+2026-05-08T14:28:11  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC3 cmd_seq=0 status=0)
+2026-05-08T14:28:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ArmCommandPacket → command.arm = 1.0
+2026-05-08T14:28:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC0 cmd_seq=1 status=0)
+2026-05-08T14:28:12  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=44 status=0)
+2026-05-08T14:28:13  INFO      tasks.flight_stage_task  FlightStageTask: ARM command received — starting arm checks
+2026-05-08T14:28:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:16  INFO      tasks.command_receiver_task  CommandReceiverTask: LaunchOkCommandPacket → command.launch_ok = 1.0
+2026-05-08T14:28:16  WARNING   tasks.command_receiver_task  CommandReceiverTask: LAUNCH_OK rejected — stage is 0, expected 1 (ARMED)
+2026-05-08T14:28:16  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC1 cmd_seq=4 status=1)
+2026-05-08T14:28:16  WARNING   tasks.flight_stage_task  FlightStageTask: LAUNCH_OK rejected (stage=0 arm_checks_ok=0)
+2026-05-08T14:28:17  WARNING   drivers.gps_driver  GpsDriver: I2C error during read
+2026-05-08T14:28:17  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:17  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=45 status=0)
+2026-05-08T14:28:20  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:22  INFO      tasks.command_receiver_task  CommandReceiverTask: LaunchOkCommandPacket → command.launch_ok = 1.0
+2026-05-08T14:28:22  WARNING   tasks.command_receiver_task  CommandReceiverTask: LAUNCH_OK rejected — stage is 0, expected 1 (ARMED)
+2026-05-08T14:28:22  WARNING   tasks.flight_stage_task  FlightStageTask: LAUNCH_OK rejected (stage=0 arm_checks_ok=0)
+2026-05-08T14:28:22  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC1 cmd_seq=5 status=1)
+2026-05-08T14:28:22  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:22  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=46 status=0)
+2026-05-08T14:28:25  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:27  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:27  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=47 status=0)
+2026-05-08T14:28:30  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:32  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:32  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=48 status=0)
+2026-05-08T14:28:35  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:37  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:37  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=49 status=0)
+2026-05-08T14:28:40  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:42  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:42  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=50 status=0)
+2026-05-08T14:28:45  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:47  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:47  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=51 status=0)
+2026-05-08T14:28:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:52  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:52  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=52 status=0)
+2026-05-08T14:28:55  WARNING   drivers.gps_driver  GpsDriver: I2C error during read
+2026-05-08T14:28:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:28:57  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:28:57  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=53 status=0)
+2026-05-08T14:29:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:02  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:02  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=54 status=0)
+2026-05-08T14:29:05  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:07  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:07  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=55 status=0)
+2026-05-08T14:29:10  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:12  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=56 status=0)
+2026-05-08T14:29:15  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:17  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:17  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=57 status=0)
+2026-05-08T14:29:20  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:22  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:22  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=58 status=0)
+2026-05-08T14:29:25  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:27  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:27  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=59 status=0)
+2026-05-08T14:29:30  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:32  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:32  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=60 status=0)
+2026-05-08T14:29:35  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:37  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:37  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=61 status=0)
+2026-05-08T14:29:40  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:42  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:42  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=62 status=0)
+2026-05-08T14:29:45  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:47  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:47  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=63 status=0)
+2026-05-08T14:29:50  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:52  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:52  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=64 status=0)
+2026-05-08T14:29:55  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:29:57  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:29:57  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=65 status=0)
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: heartbeat received (system 1, component 0)
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=30 at 50.0 Hz
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=31 at 50.0 Hz
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=24 at 5.0 Hz
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=32 at 5.0 Hz
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=29 at 5.0 Hz
+2026-05-08T14:30:00  INFO      tasks.mavlink_task  MavlinkTask: requested MSG_ID=74 at 5.0 Hz
+2026-05-08T14:30:00  INFO      tasks.flight_stage_task  FlightStageTask: arm checks passed — advancing to STAGE_ARMED
+2026-05-08T14:30:00  INFO      tasks.flight_stage_task  FlightStageTask: stage 0 → 1
+2026-05-08T14:30:02  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:02  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=66 status=0)
+2026-05-08T14:30:07  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:07  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=67 status=0)
+2026-05-08T14:30:12  INFO      tasks.command_receiver_task  CommandReceiverTask: LaunchOkCommandPacket → command.launch_ok = 1.0
+2026-05-08T14:30:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC1 cmd_seq=6 status=0)
+2026-05-08T14:30:12  INFO      tasks.flight_stage_task  FlightStageTask: LAUNCH_OK received — advancing to STAGE_LAUNCH (ref alt=78.1 m)
+2026-05-08T14:30:12  INFO      tasks.rw_task  RWTask: LAUNCH + altitude reached — spinning up reaction wheel
+2026-05-08T14:30:12  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:12  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=68 status=0)
+2026-05-08T14:30:17  INFO      tasks.rw_task  RWTask: stabilizing payload
+2026-05-08T14:30:18  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:18  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=69 status=0)
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617881, yaw_rate: 0.000948, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617848, yaw_rate: 0.000981, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617766, yaw_rate: 0.000546, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617697, yaw_rate: 0.000223, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617643, yaw_rate: -0.000504, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617633, yaw_rate: 0.001271, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617631, yaw_rate: -0.000469, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617614, yaw_rate: 0.000501, control signal: 20.000000
+2026-05-08T14:30:18  INFO      tasks.rw_task  yaw_error: -1.617532, yaw_rate: -0.000359, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617506, yaw_rate: 0.000671, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617524, yaw_rate: 0.000138, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617591, yaw_rate: -0.000367, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617620, yaw_rate: 0.000524, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617617, yaw_rate: 0.000187, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617579, yaw_rate: 0.000264, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617536, yaw_rate: 0.000371, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617482, yaw_rate: 0.000299, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617429, yaw_rate: 0.000434, control signal: 20.000000
+2026-05-08T14:30:19  INFO      tasks.rw_task  yaw_error: -1.617427, yaw_rate: -0.000220, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617365, yaw_rate: 0.000394, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617292, yaw_rate: -0.000456, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617239, yaw_rate: -0.000167, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617175, yaw_rate: 0.000229, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617102, yaw_rate: 0.000250, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.617043, yaw_rate: -0.000030, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.616979, yaw_rate: 0.000793, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.616931, yaw_rate: 0.000766, control signal: 20.000000
+2026-05-08T14:30:20  INFO      tasks.rw_task  yaw_error: -1.616939, yaw_rate: 0.000472, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616910, yaw_rate: 0.000378, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616901, yaw_rate: -0.000498, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616854, yaw_rate: 0.000186, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616843, yaw_rate: -0.000227, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616810, yaw_rate: 0.000149, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616771, yaw_rate: 0.000598, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616766, yaw_rate: -0.000068, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616746, yaw_rate: -0.000037, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616707, yaw_rate: 0.000166, control signal: 20.000000
+2026-05-08T14:30:21  INFO      tasks.rw_task  yaw_error: -1.616622, yaw_rate: 0.001045, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616520, yaw_rate: 0.000635, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616409, yaw_rate: 0.000567, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616327, yaw_rate: -0.000183, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616267, yaw_rate: -0.000033, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616257, yaw_rate: 0.000214, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616238, yaw_rate: -0.000139, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616238, yaw_rate: -0.000427, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616189, yaw_rate: 0.000381, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.rw_task  yaw_error: -1.616093, yaw_rate: -0.000155, control signal: 20.000000
+2026-05-08T14:30:22  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:22  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=70 status=0)
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.616023, yaw_rate: -0.000021, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615942, yaw_rate: -0.000017, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615913, yaw_rate: 0.000776, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615897, yaw_rate: 0.000222, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615866, yaw_rate: 0.000139, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615824, yaw_rate: 0.000237, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615766, yaw_rate: 0.000450, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615735, yaw_rate: 0.000423, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615749, yaw_rate: 0.000657, control signal: 20.000000
+2026-05-08T14:30:23  INFO      tasks.rw_task  yaw_error: -1.615807, yaw_rate: -0.000162, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615871, yaw_rate: -0.000248, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615912, yaw_rate: 0.000185, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615909, yaw_rate: 0.000494, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615867, yaw_rate: -0.000795, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615865, yaw_rate: -0.000465, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615834, yaw_rate: 0.000138, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615807, yaw_rate: 0.000018, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615731, yaw_rate: 0.000922, control signal: 20.000000
+2026-05-08T14:30:24  INFO      tasks.rw_task  yaw_error: -1.615658, yaw_rate: 0.000299, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615632, yaw_rate: -0.000345, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615617, yaw_rate: 0.000241, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615571, yaw_rate: 0.000406, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615559, yaw_rate: -0.000380, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615566, yaw_rate: -0.000487, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615551, yaw_rate: 0.000357, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615497, yaw_rate: 0.000719, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615482, yaw_rate: 0.000132, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615454, yaw_rate: 0.000228, control signal: 20.000000
+2026-05-08T14:30:25  INFO      tasks.rw_task  yaw_error: -1.615407, yaw_rate: 0.000109, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615360, yaw_rate: 0.000512, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615306, yaw_rate: 0.000204, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615281, yaw_rate: 0.000357, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615271, yaw_rate: 0.000294, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615239, yaw_rate: 0.000599, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615195, yaw_rate: 0.001000, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615153, yaw_rate: -0.000037, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615077, yaw_rate: 0.000495, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.615010, yaw_rate: 0.000735, control signal: 20.000000
+2026-05-08T14:30:26  INFO      tasks.rw_task  yaw_error: -1.614941, yaw_rate: -0.000500, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614872, yaw_rate: 0.000576, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614824, yaw_rate: -0.000191, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614795, yaw_rate: -0.000125, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614741, yaw_rate: 0.000695, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614698, yaw_rate: 0.000240, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614608, yaw_rate: 0.000556, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614527, yaw_rate: 0.000622, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614509, yaw_rate: 0.000109, control signal: 20.000000
+2026-05-08T14:30:27  INFO      tasks.rw_task  yaw_error: -1.614509, yaw_rate: -0.000098, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:28  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=71 status=0)
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614507, yaw_rate: 0.000398, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614502, yaw_rate: 0.000477, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614483, yaw_rate: 0.000571, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614452, yaw_rate: 0.000704, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614430, yaw_rate: 0.000010, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614441, yaw_rate: 0.000219, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614442, yaw_rate: 0.000215, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614456, yaw_rate: -0.000251, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614473, yaw_rate: 0.000192, control signal: 20.000000
+2026-05-08T14:30:28  INFO      tasks.rw_task  yaw_error: -1.614496, yaw_rate: 0.000656, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614526, yaw_rate: 0.000345, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614514, yaw_rate: 0.000735, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614476, yaw_rate: 0.000430, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614434, yaw_rate: 0.000532, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614386, yaw_rate: -0.000101, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614351, yaw_rate: -0.000746, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614275, yaw_rate: 0.000795, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614187, yaw_rate: 0.000309, control signal: 20.000000
+2026-05-08T14:30:29  INFO      tasks.rw_task  yaw_error: -1.614099, yaw_rate: 0.000124, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.614023, yaw_rate: 0.000438, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613947, yaw_rate: 0.000552, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613878, yaw_rate: 0.000109, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613798, yaw_rate: 0.000641, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613736, yaw_rate: 0.000441, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613696, yaw_rate: -0.000095, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613637, yaw_rate: 0.000598, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613587, yaw_rate: 0.000655, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613561, yaw_rate: 0.000584, control signal: 20.000000
+2026-05-08T14:30:30  INFO      tasks.rw_task  yaw_error: -1.613518, yaw_rate: -0.000583, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613444, yaw_rate: -0.000050, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613406, yaw_rate: -0.000009, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613365, yaw_rate: -0.000194, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613348, yaw_rate: -0.000277, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613304, yaw_rate: -0.000763, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613260, yaw_rate: -0.000036, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613191, yaw_rate: -0.000377, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613112, yaw_rate: 0.000715, control signal: 20.000000
+2026-05-08T14:30:31  INFO      tasks.rw_task  yaw_error: -1.613047, yaw_rate: -0.000168, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612988, yaw_rate: 0.000555, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612948, yaw_rate: 0.000475, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612931, yaw_rate: 0.000384, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612951, yaw_rate: 0.000748, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612951, yaw_rate: 0.000763, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612959, yaw_rate: 0.000342, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612975, yaw_rate: -0.000287, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612982, yaw_rate: 0.000372, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612960, yaw_rate: -0.000310, control signal: 20.000000
+2026-05-08T14:30:32  INFO      tasks.rw_task  yaw_error: -1.612968, yaw_rate: -0.000361, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:33  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=72 status=0)
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612976, yaw_rate: 0.001012, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612995, yaw_rate: 0.000740, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.613008, yaw_rate: 0.000560, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.613025, yaw_rate: 0.000451, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612975, yaw_rate: 0.000532, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612945, yaw_rate: -0.000414, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612906, yaw_rate: 0.000559, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612873, yaw_rate: 0.000445, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612860, yaw_rate: -0.000043, control signal: 20.000000
+2026-05-08T14:30:33  INFO      tasks.rw_task  yaw_error: -1.612832, yaw_rate: 0.001365, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612863, yaw_rate: 0.000073, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612940, yaw_rate: 0.000296, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612928, yaw_rate: 0.000082, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612935, yaw_rate: -0.000054, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612931, yaw_rate: -0.000301, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612901, yaw_rate: 0.000179, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612904, yaw_rate: 0.000560, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612910, yaw_rate: 0.000545, control signal: 20.000000
+2026-05-08T14:30:34  INFO      tasks.rw_task  yaw_error: -1.612880, yaw_rate: 0.000510, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612862, yaw_rate: 0.000751, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612829, yaw_rate: 0.000548, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612824, yaw_rate: 0.000163, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612810, yaw_rate: 0.000372, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612796, yaw_rate: -0.000022, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612771, yaw_rate: 0.000093, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612691, yaw_rate: 0.000265, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612681, yaw_rate: 0.000012, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612658, yaw_rate: -0.000041, control signal: 20.000000
+2026-05-08T14:30:35  INFO      tasks.rw_task  yaw_error: -1.612679, yaw_rate: 0.000544, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612674, yaw_rate: -0.000098, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612675, yaw_rate: 0.000505, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612630, yaw_rate: 0.000561, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612581, yaw_rate: 0.000682, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612563, yaw_rate: -0.000056, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612536, yaw_rate: 0.000755, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612504, yaw_rate: 0.000332, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612474, yaw_rate: 0.001237, control signal: 20.000000
+2026-05-08T14:30:36  INFO      tasks.rw_task  yaw_error: -1.612486, yaw_rate: 0.000771, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612467, yaw_rate: 0.000770, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612477, yaw_rate: 0.000807, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612496, yaw_rate: 0.000367, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612539, yaw_rate: 0.000718, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612567, yaw_rate: 0.000439, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612638, yaw_rate: 0.000148, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612720, yaw_rate: 0.000448, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612797, yaw_rate: 0.000759, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612888, yaw_rate: -0.000457, control signal: 20.000000
+2026-05-08T14:30:37  INFO      tasks.rw_task  yaw_error: -1.612948, yaw_rate: 0.000135, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.command_receiver_task  CommandReceiverTask: GsGpsCommandPacket → wrote 3 keys
+2026-05-08T14:30:38  INFO      tasks.command_receiver_task  CommandReceiverTask: ACK sent (cmd_id=0xC4 cmd_seq=73 status=0)
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612962, yaw_rate: -0.000099, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612982, yaw_rate: 0.000497, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.613005, yaw_rate: -0.000046, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612969, yaw_rate: 0.000853, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612917, yaw_rate: 0.000971, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612871, yaw_rate: 0.000974, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612773, yaw_rate: -0.000456, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612677, yaw_rate: 0.000472, control signal: 20.000000
+2026-05-08T14:30:38  INFO      tasks.rw_task  yaw_error: -1.612636, yaw_rate: 0.000634, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612616, yaw_rate: 0.000213, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612524, yaw_rate: -0.000736, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612511, yaw_rate: -0.001622, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612425, yaw_rate: -0.000042, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612433, yaw_rate: -0.000711, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612398, yaw_rate: 0.002697, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612437, yaw_rate: -0.001258, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612495, yaw_rate: 0.001047, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612499, yaw_rate: -0.001445, control signal: 20.000000
+2026-05-08T14:30:39  INFO      tasks.rw_task  yaw_error: -1.612444, yaw_rate: 0.000968, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612396, yaw_rate: 0.000307, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612317, yaw_rate: 0.000070, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612230, yaw_rate: -0.000138, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612122, yaw_rate: 0.000257, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612055, yaw_rate: -0.000889, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.612039, yaw_rate: 0.000509, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.613060, yaw_rate: -0.080685, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.625904, yaw_rate: -0.074469, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.627709, yaw_rate: -0.074408, control signal: 20.000000
+2026-05-08T14:30:40  INFO      tasks.rw_task  yaw_error: -1.661890, yaw_rate: -0.325044, control signal: 20.000000
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
