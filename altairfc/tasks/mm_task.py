@@ -28,11 +28,9 @@ class MMTask(BaseTask):
 
     def setup(self) -> None:
         self.motor = None
-        self._next_reconnect: float = 0.0
-        self._connect_vesc()
-
-        if self.motor is None:
+        if not self._connect_vesc():
             return
+
 
         ## Polling Telemetry During Preflight
         while not self._stop_event.is_set():
@@ -48,6 +46,8 @@ class MMTask(BaseTask):
         logger.info("MMTask: LAUNCH + altitude reached — braking payload")
         while not self._stop_event.is_set():
             self._store()
+            if self.motor is None:
+                return
             yaw_rate = self.datastore.read("mavlink.attitude.yawspeed", default=None)
             if yaw_rate is None:
                 logger.warning("mavlink.attitude.yawspeed is missing")
@@ -55,13 +55,12 @@ class MMTask(BaseTask):
             motor_rpm = float(self.datastore.read("rw.rpm", default=0.0))
             self.motor.set_brake_current(1650)
             time.sleep(0.05)
-            if abs(float(yaw_rate)) < 0.1 and motor_rpm >= 1700:
+            if abs(float(yaw_rate)) < 0.1 and motor_rpm >= 2150:
                 break
 
     def execute(self) -> None:
+        self._store()
         if self.motor is None:
-            if time.monotonic() >= self._next_reconnect:
-                self._connect_vesc()
             return
 
         pointing_active = self.datastore.read("event.pointing_active", default=None)
@@ -75,38 +74,45 @@ class MMTask(BaseTask):
             self._stop_event.set()
             return
         
-        self._store()
-        motor_speed_err = float(self.datastore.read("rw.rpm", default=0.0)) - 1700
+        motor_speed_err = float(self.datastore.read("rw.rpm", default=0.0)) - 2150
         control_signal = self.controller.output(motor_speed_err)
         self.motor.set_current(int(control_signal))
 
     def teardown(self) -> None:
         if self.motor is not None:
             self.motor.set_current(0)
+        else:
+            return
 
-    def _connect_vesc(self, retry_interval_s: float = 5.0) -> None:
-        """Block until the VESC connects, retrying every retry_interval_s."""
-        while not self._stop_event.is_set():
-            try:
-                self.motor = VESCObject(self._vesc_port)
-                logger.info("MMTask: VESC connected on %s", self._vesc_port)
-                return
-            except Exception as e:
-                logger.warning("MMTask: waiting for VESC on %s (%s) — retrying in %.0fs",
-                               self._vesc_port, e, retry_interval_s)
-                self._stop_event.wait(timeout=retry_interval_s)
+    def _connect_vesc(self) -> bool:
+        try:
+            motor = VESCObject(self._vesc_port)
+            data = motor.get_data(timeout=0.3)
+            if data is None:
+                motor.port.close()
+                raise TimeoutError("no data received from VESC")
+            
+            self.motor = motor
+            self.datastore.write("system.mm_vesc_connected", 1.0)
+            logger.info("MMTask: VESC connected on %s", self._vesc_port)
+            return True
+
+        except Exception as e:
+            self.motor = None
+            self.datastore.write("system.mm_vesc_connected", 0.0)
+            logger.error("MMTask: VESC not connected on %s: %s", self._vesc_port, e)
+            return False
 
     def _store(self) -> None:
         if self.motor is None:
             return
         try:
             data = self.motor.get_data(timeout=0.3)
-        except Exception as e:
-            logger.error("MMTask: VESC disconnected during data read: %s", e)
-            self.motor = None
-            self._next_reconnect = time.monotonic() + 5.0
-            return
-        if data:
+            if data is None:
+                logger.warning("MMTask: no data received from VESC")
+                self.motor = None
+                self.datastore.write("system.mm_vesc_connected", 0.0)
+                return
             for f in ('rpm', 'duty_now', 'current_motor', 'current_in',
                       'v_in', 'temp_pcb', 'amp_hours', 'tachometer',
                       'tachometer_abs'):
@@ -114,9 +120,17 @@ class MMTask(BaseTask):
             fault = getattr(data, 'mc_fault_code', b'\x00')
             self.datastore.write("mm.mc_fault_code", fault[0] if isinstance(fault, (bytes, bytearray)) else int(fault))
 
+        except Exception as e:
+            logger.error("MMTask: VESC disconnected during data read: %s", e)
+            self.motor = None
+            self.datastore.write("system.mm_vesc_connected", 0.0)
+            return
+        
     def _hold(self, fn, value, duration, dt = 0.05):
         start_time = time.time()
         while time.time() - start_time < duration:
             self._store()
+            if self.motor is None:
+                return
             fn(value)
             time.sleep(dt)
