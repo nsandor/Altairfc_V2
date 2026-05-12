@@ -73,9 +73,12 @@ class SerialTransport:
         self._cfg_queue: queue.Queue[tuple[int, object]] = queue.Queue()
 
         # LR900P state
-        self._lr_seq  = 0
-        self._start_t = 0.0
-        self._linked  = False
+        self._lr_seq      = 0
+        self._start_t     = 0.0
+        self._linked      = False
+        # True only while a config read/write is in progress — heartbeat uses
+        # link_flag=0x1E (config mode) when set, 0x00 (transparent) otherwise.
+        self._config_active = False
 
         self._assembler = FrameAssembler(self._on_lr_frame)
 
@@ -112,6 +115,13 @@ class SerialTransport:
         if self._writer_thread:
             self._writer_thread.join(timeout=3.0)
         if self._serial and self._serial.is_open:
+            # Return radio to transparent bridge mode before closing the port.
+            try:
+                frame = build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x00)
+                self._serial.write(frame)
+                time.sleep(0.05)
+            except Exception:
+                pass
             self._serial.close()
         logger.info("SerialTransport: closed")
 
@@ -165,9 +175,13 @@ class SerialTransport:
 
     def read_config(self, timeout: float = 3.0) -> ConfigResponse | None:
         self._flush_cfg_queue()
-        with self._write_lock:
-            self._serial.write(build_config_read(self._next_lr_seq()))
-        return self._wait_cfg(SUBBLOCK_READ, timeout)
+        self._config_active = True
+        try:
+            with self._write_lock:
+                self._serial.write(build_config_read(self._next_lr_seq()))
+            return self._wait_cfg(SUBBLOCK_READ, timeout)
+        finally:
+            self._config_active = False
 
     def write_config(self, data_rate: int, tx_power: int, channel: int,
                      timeout: float = 3.0) -> WriteAckResponse | None:
@@ -178,10 +192,14 @@ class SerialTransport:
         if not 0 <= channel <= 63:
             raise ValueError("channel must be 0-63")
         self._flush_cfg_queue()
-        with self._write_lock:
-            self._serial.write(build_config_write(
-                self._next_lr_seq(), data_rate, tx_power, channel))
-        return self._wait_cfg(SUBBLOCK_WRITE, timeout)
+        self._config_active = True
+        try:
+            with self._write_lock:
+                self._serial.write(build_config_write(
+                    self._next_lr_seq(), data_rate, tx_power, channel))
+            return self._wait_cfg(SUBBLOCK_WRITE, timeout)
+        finally:
+            self._config_active = False
 
     # ------------------------------------------------------------------
     # Internal — LR900P sequencing & config queue
@@ -266,10 +284,13 @@ class SerialTransport:
         while self._running:
             now = time.monotonic()
             if now >= next_tick:
+                # Use 0x1E (config mode) only while a config operation is active;
+                # 0x00 (transparent bridge) otherwise so the air link is not blocked.
+                link_flag = 0x1E if self._config_active else 0x00
                 try:
                     with self._write_lock:
                         self._serial.write(
-                            build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms()))
+                            build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag))
                 except Exception:
                     pass
                 next_tick += HEARTBEAT_INTERVAL
