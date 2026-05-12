@@ -86,10 +86,19 @@ class SerialTransport:
         self._reader_thread:    threading.Thread | None = None
         self._heartbeat_thread: threading.Thread | None = None
         self._running = False
+        self._open_event = threading.Event()
 
     # ------------------------------------------------------------------
     # Lifecycle
     # ------------------------------------------------------------------
+
+    @property
+    def is_open(self) -> bool:
+        return self._open_event.is_set()
+
+    def wait_until_open(self, timeout: float = 10.0) -> bool:
+        """Block until open() has been called. Returns True if open within timeout."""
+        return self._open_event.wait(timeout=timeout)
 
     def open(self) -> None:
         self._serial  = serial.Serial(self.port, self.baud, timeout=0.05)
@@ -107,6 +116,7 @@ class SerialTransport:
         self._writer_thread.start()
         self._reader_thread.start()
         self._heartbeat_thread.start()
+        self._open_event.set()
         logger.info("SerialTransport: opened %s @ %d baud", self.port, self.baud)
 
     def close(self) -> None:

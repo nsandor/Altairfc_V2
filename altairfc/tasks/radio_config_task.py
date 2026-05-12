@@ -61,6 +61,9 @@ class RadioConfigTask(BaseTask):
     # ------------------------------------------------------------------
 
     def setup(self) -> None:
+        if not self._transport.wait_until_open(timeout=10.0):
+            logger.warning("RadioConfigTask: transport not open after 10 s — skipping startup read")
+            return
         cfg = self._transport.read_config(timeout=4.0)
         if cfg is None:
             logger.warning("RadioConfigTask: could not read modem config at startup")
