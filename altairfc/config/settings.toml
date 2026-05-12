@@ -96,10 +96,15 @@ baud = 115200
 # LR900P modem initial configuration applied on startup if it differs from
 # the modem's current settings.  Changing these values here takes effect on
 # the next FC boot; a RADIO_CONFIG ground command can change them at runtime.
+config_enabled = false  # true: read/write modem config on startup and handle GS commands
+                        # false: transparent passthrough only — no config frames sent
 data_rate  = 2    # 0=Low, 1=Mid, 2=High
 tx_power   = 2    # 0=Low, 1=Mid, 2=High
 channel    = 0    # 0-63
 watchdog_s = 30.0 # seconds without GS contact on new channel before rolling back to defaults
+# Telemetry TX rate scale per data_rate index [Low, Mid, High].
+# Effective rate = TX_RATE_HZ * scale. Keeps the TX queue from overflowing at lower data rates.
+rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel]
 Kp = 12740.0

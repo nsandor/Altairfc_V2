@@ -68,6 +68,11 @@ class TelemetryTask(BaseTask):
         self.datastore.write("system.time_unix", time.time())
         now = time.monotonic()
 
+        # Scale factor from radio.rate_scale, written by RadioConfigTask whenever
+        # the modem data_rate changes. Defaults to 1.0 until radio config is known.
+        scale = float(self.datastore.read("radio.rate_scale", default=1.0))
+        scale = max(scale, 0.01)  # guard against zero/negative
+
         # Build schedule once on first call — stagger initial deadlines to avoid burst
         if not self._packet_schedule:
             eligible = [
@@ -76,7 +81,6 @@ class TelemetryTask(BaseTask):
             ]
             for i, (pid, cls) in enumerate(eligible):
                 period = 1.0 / cls.TX_RATE_HZ
-                # Stagger start times evenly across one period
                 stagger = i * period / max(len(eligible), 1)
                 self._packet_schedule[pid] = (cls, now + stagger)
 
@@ -87,9 +91,9 @@ class TelemetryTask(BaseTask):
             if now < next_send:
                 continue
 
-            period = 1.0 / pkt_class.TX_RATE_HZ
-            # Advance deadline by one period; if we've fallen more than one period behind,
-            # skip ahead to now to avoid a catch-up burst.
+            # Effective period stretches when scale < 1.0 (slower data rate).
+            period = 1.0 / (pkt_class.TX_RATE_HZ * scale)
+            # Advance deadline; skip catch-up burst if fallen behind.
             new_next = next_send + period
             if new_next < now:
                 new_next = now + period

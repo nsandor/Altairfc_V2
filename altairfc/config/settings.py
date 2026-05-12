@@ -72,10 +72,15 @@ class FlightStageConfig:
 
 @dataclass
 class RadioConfig:
-    data_rate:  int   = 1     # 0=Low, 1=Mid, 2=High
-    tx_power:   int   = 2     # 0=Low, 1=Mid, 2=High
-    channel:    int   = 0     # 0-63
-    watchdog_s: float = 30.0  # seconds without GS contact before rolling back a channel change
+    data_rate:      int   = 1     # 0=Low, 1=Mid, 2=High
+    tx_power:       int   = 2     # 0=Low, 1=Mid, 2=High
+    channel:        int   = 0     # 0-63
+    watchdog_s:     float = 30.0  # seconds without GS contact before rolling back a channel change
+    config_enabled: bool  = False # False = transparent passthrough only, no config frames sent
+    # Telemetry TX rate scale factor per data_rate index.
+    # Applied to every packet's TX_RATE_HZ: effective_rate = TX_RATE_HZ * scale.
+    # Index matches data_rate: [Low, Mid, High]
+    rate_scale: list = field(default_factory=lambda: [0.1, 0.33, 1.0])
 
 
 @dataclass
@@ -163,10 +168,12 @@ class SystemConfig:
 
         rc_raw = data.get("radio_config", {})
         radio_config = RadioConfig(
-            data_rate=rc_raw.get("data_rate",   1),
-            tx_power=rc_raw.get("tx_power",     2),
-            channel=rc_raw.get("channel",       0),
-            watchdog_s=rc_raw.get("watchdog_s", 30.0),
+            data_rate=rc_raw.get("data_rate",           1),
+            tx_power=rc_raw.get("tx_power",             2),
+            channel=rc_raw.get("channel",               0),
+            watchdog_s=rc_raw.get("watchdog_s",         30.0),
+            config_enabled=rc_raw.get("config_enabled", False),
+            rate_scale=rc_raw.get("rate_scale",         [0.1, 0.33, 1.0]),
         )
 
         return cls(
