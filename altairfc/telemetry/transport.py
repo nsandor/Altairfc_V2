@@ -7,123 +7,290 @@ import time
 
 import serial
 
+from drivers.lr900p import (
+    FrameAssembler,
+    HeartbeatResponse,
+    ConfigResponse,
+    WriteAckResponse,
+    build_heartbeat,
+    build_config_read,
+    build_config_write,
+    parse_heartbeat_response,
+    parse_config_response,
+    parse_write_ack,
+    HEARTBEAT_INTERVAL,
+    SUBBLOCK_READ,
+    SUBBLOCK_WRITE,
+    SOF,
+)
+
 logger = logging.getLogger(__name__)
 
-_SENTINEL = object()
-
-# Serial framing overhead: 1 start + 8 data + 1 stop = 10 bits per byte
-_BITS_PER_BYTE = 10
+_SENTINEL    = object()
+_BITS_PER_BYTE = 10  # 1 start + 8 data + 1 stop
 
 
 class SerialTransport:
     """
-    Non-blocking serial writer for the LR-900p telemetry radio.
+    Serial transport for the LR900P telemetry radio.
 
-    send() enqueues a binary frame and returns immediately.
-    A background writer thread dequeues frames and writes them to the serial port.
+    Owns the serial port exclusively.  Three daemon threads run while open:
 
-    Two strategies prevent queue saturation when the radio can't keep up:
+      writer    — dequeues outgoing telemetry frames and writes them, baud-paced
+      heartbeat — sends LR900P keepalive frames every 625 ms so the modem stays
+                  responsive to config requests
+      reader    — reads all incoming bytes, routes them:
+                    • LR900P frames (SOF 0xEF) → FrameAssembler → internal queues
+                    • everything else appended to _cmd_buf for CommandReceiverTask
 
-    1. Overwrite-on-full: if the queue is full, the oldest frame is discarded
-       to make room for the newest. Stale telemetry is worthless — fresh data
-       is always preferred over old data that hasn't been sent yet.
+    Public interface used by tasks:
 
-    2. Baud-paced writes: after each serial.write(), the writer thread sleeps
-       for the theoretical transmission time of that frame at the configured
-       baud rate. This prevents the writer from outrunning the radio's TX
-       buffer and blocking on subsequent writes.
+      send(frame)              — enqueue a telemetry frame (drops oldest if full)
+      send_priority(frame)     — write immediately, bypassing the queue
+      read_available() → bytes — drain _cmd_buf for CommandReceiverTask
+
+      read_config(timeout)     → ConfigResponse | None   (blocking)
+      write_config(...)        → WriteAckResponse | None (blocking; modem reboots after)
+      is_linked() → bool       — True once the modem has acknowledged a heartbeat
     """
 
     def __init__(self, port: str, baud: int, write_queue_maxsize: int = 64) -> None:
         self.port = port
         self.baud = baud
-        self._queue: queue.Queue[bytes | object] = queue.Queue(maxsize=write_queue_maxsize)
-        self._serial: serial.Serial | None = None
-        self._writer_thread: threading.Thread | None = None
-        self._write_lock = threading.Lock()
-        # Seconds per byte at this baud rate
         self._secs_per_byte = _BITS_PER_BYTE / baud
 
+        self._serial: serial.Serial | None = None
+        self._write_lock = threading.Lock()
+
+        # Outgoing telemetry queue
+        self._tx_queue: queue.Queue[bytes | object] = queue.Queue(maxsize=write_queue_maxsize)
+
+        # Incoming command bytes for CommandReceiverTask
+        self._cmd_buf     = bytearray()
+        self._cmd_buf_lock = threading.Lock()
+
+        # LR900P config response queues (subblock tagged)
+        self._cfg_queue: queue.Queue[tuple[int, object]] = queue.Queue()
+
+        # LR900P state
+        self._lr_seq  = 0
+        self._start_t = 0.0
+        self._linked  = False
+
+        self._assembler = FrameAssembler(self._on_lr_frame)
+
+        self._writer_thread:    threading.Thread | None = None
+        self._reader_thread:    threading.Thread | None = None
+        self._heartbeat_thread: threading.Thread | None = None
+        self._running = False
+
+    # ------------------------------------------------------------------
+    # Lifecycle
+    # ------------------------------------------------------------------
+
     def open(self) -> None:
-        self._serial = serial.Serial(self.port, self.baud, timeout=1.0)
+        self._serial  = serial.Serial(self.port, self.baud, timeout=0.05)
+        self._start_t = time.monotonic()
+        self._running = True
+        self._linked  = False
+
         self._writer_thread = threading.Thread(
-            target=self._writer_loop,
-            name="telemetry-transport-writer",
-            daemon=True,
-        )
+            target=self._writer_loop, name="transport-writer", daemon=True)
+        self._reader_thread = threading.Thread(
+            target=self._reader_loop, name="transport-reader", daemon=True)
+        self._heartbeat_thread = threading.Thread(
+            target=self._heartbeat_loop, name="transport-heartbeat", daemon=True)
+
         self._writer_thread.start()
-        logger.info("SerialTransport opened %s @ %d baud", self.port, self.baud)
+        self._reader_thread.start()
+        self._heartbeat_thread.start()
+        logger.info("SerialTransport: opened %s @ %d baud", self.port, self.baud)
 
     def close(self) -> None:
-        self._queue.put(_SENTINEL)
-        if self._writer_thread is not None:
+        self._running = False
+        self._tx_queue.put(_SENTINEL)
+        if self._writer_thread:
             self._writer_thread.join(timeout=3.0)
-        if self._serial is not None and self._serial.is_open:
+        if self._serial and self._serial.is_open:
             self._serial.close()
-        logger.info("SerialTransport closed")
+        logger.info("SerialTransport: closed")
 
-    def read_available(self) -> bytes:
-        """Read all currently available bytes (non-blocking). Safe to call from a separate thread."""
-        if self._serial and self._serial.is_open and self._serial.in_waiting:
-            return self._serial.read(self._serial.in_waiting)
-        return b""
+    # ------------------------------------------------------------------
+    # Telemetry TX (used by TelemetryTask / CommandReceiverTask)
+    # ------------------------------------------------------------------
+
+    def send(self, frame: bytes) -> None:
+        """Enqueue a telemetry frame; drop oldest if full."""
+        while True:
+            try:
+                self._tx_queue.put_nowait(frame)
+                return
+            except queue.Full:
+                try:
+                    dropped = self._tx_queue.get_nowait()
+                    if isinstance(dropped, bytes):
+                        logger.debug("TX queue full — dropped %d-byte frame", len(dropped))
+                except queue.Empty:
+                    pass
 
     def send_priority(self, frame: bytes) -> None:
-        """Write a frame directly to the serial port, bypassing the write queue.
-
-        Used for ACK frames that must not wait behind queued telemetry frames.
-        Acquires a lock shared with the writer thread to prevent interleaved writes.
-        Safe to call from any thread.
-        """
+        """Write directly to serial, bypassing the TX queue. Used for ACK frames."""
         if self._serial is None or not self._serial.is_open:
-            logger.warning("send_priority: serial not open, dropping %d-byte frame", len(frame))
+            logger.warning("send_priority: port not open, dropping %d-byte frame", len(frame))
             return
         with self._write_lock:
             try:
                 self._serial.write(frame)
                 time.sleep(len(frame) * self._secs_per_byte)
             except serial.SerialException:
-                logger.exception("send_priority write error")
+                logger.exception("send_priority: write error")
 
-    def send(self, frame: bytes) -> None:
-        """Enqueue a frame. If the queue is full, drop the oldest to make room."""
-        while True:
+    # ------------------------------------------------------------------
+    # Command RX (used by CommandReceiverTask)
+    # ------------------------------------------------------------------
+
+    def read_available(self) -> bytes:
+        """Return and clear all buffered non-LR900P bytes received so far."""
+        with self._cmd_buf_lock:
+            data = bytes(self._cmd_buf)
+            self._cmd_buf.clear()
+        return data
+
+    # ------------------------------------------------------------------
+    # LR900P config API (used by RadioConfigTask)
+    # ------------------------------------------------------------------
+
+    def is_linked(self) -> bool:
+        return self._linked
+
+    def read_config(self, timeout: float = 3.0) -> ConfigResponse | None:
+        self._flush_cfg_queue()
+        with self._write_lock:
+            self._serial.write(build_config_read(self._next_lr_seq()))
+        return self._wait_cfg(SUBBLOCK_READ, timeout)
+
+    def write_config(self, data_rate: int, tx_power: int, channel: int,
+                     timeout: float = 3.0) -> WriteAckResponse | None:
+        if not 0 <= data_rate <= 2:
+            raise ValueError("data_rate must be 0-2")
+        if not 0 <= tx_power <= 2:
+            raise ValueError("tx_power must be 0-2")
+        if not 0 <= channel <= 63:
+            raise ValueError("channel must be 0-63")
+        self._flush_cfg_queue()
+        with self._write_lock:
+            self._serial.write(build_config_write(
+                self._next_lr_seq(), data_rate, tx_power, channel))
+        return self._wait_cfg(SUBBLOCK_WRITE, timeout)
+
+    # ------------------------------------------------------------------
+    # Internal — LR900P sequencing & config queue
+    # ------------------------------------------------------------------
+
+    def _next_lr_seq(self) -> int:
+        s = self._lr_seq
+        self._lr_seq = (self._lr_seq + 1) & 0xFF
+        return s
+
+    def _pc_uptime_ms(self) -> int:
+        return int((time.monotonic() - self._start_t) * 1000) & 0xFFFF
+
+    def _flush_cfg_queue(self) -> None:
+        while not self._cfg_queue.empty():
             try:
-                self._queue.put_nowait(frame)
-                return
-            except queue.Full:
-                # Discard the oldest frame so the newest (freshest) data gets through
+                self._cfg_queue.get_nowait()
+            except queue.Empty:
+                break
+
+    def _wait_cfg(self, subblock: int, timeout: float):
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                return None
+            try:
+                item = self._cfg_queue.get(timeout=remaining)
+                if item[0] == subblock:
+                    return item[1]
+                # Wrong subblock — put it back and yield briefly
+                self._cfg_queue.put(item)
+                time.sleep(0.005)
+            except queue.Empty:
+                return None
+
+    # ------------------------------------------------------------------
+    # Internal — frame dispatch from reader thread
+    # ------------------------------------------------------------------
+
+    def _on_lr_frame(self, raw: bytes) -> None:
+        hb = parse_heartbeat_response(raw)
+        if hb is not None:
+            self._linked = True
+            return
+
+        cfg = parse_config_response(raw)
+        if cfg is not None:
+            self._cfg_queue.put((SUBBLOCK_READ, cfg))
+            return
+
+        ack = parse_write_ack(raw)
+        if ack is not None:
+            self._cfg_queue.put((SUBBLOCK_WRITE, ack))
+
+    # ------------------------------------------------------------------
+    # Threads
+    # ------------------------------------------------------------------
+
+    def _reader_loop(self) -> None:
+        while self._running:
+            try:
+                data = self._serial.read(256)
+            except Exception:
+                if self._running:
+                    time.sleep(0.1)
+                continue
+            if not data:
+                continue
+
+            # Partition bytes: LR900P frames start with SOF (0xEF); telemetry/command
+            # frames start with SYNC (0xAA). Feed a copy to the LR900P assembler;
+            # append everything to _cmd_buf for CommandReceiverTask.
+            # The assembler ignores bytes that don't match its framing, so passing
+            # all bytes to both consumers is safe — the only cost is a tiny memcpy.
+            self._assembler.feed(data)
+            with self._cmd_buf_lock:
+                self._cmd_buf.extend(data)
+
+    def _heartbeat_loop(self) -> None:
+        next_tick = time.monotonic()
+        while self._running:
+            now = time.monotonic()
+            if now >= next_tick:
                 try:
-                    dropped = self._queue.get_nowait()
-                    if isinstance(dropped, bytes):
-                        logger.debug(
-                            "Queue full — dropped oldest frame (%d bytes) to enqueue newest (%d bytes)",
-                            len(dropped), len(frame),
-                        )
-                except queue.Empty:
-                    pass  # race: another thread drained it; retry put
+                    with self._write_lock:
+                        self._serial.write(
+                            build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms()))
+                except Exception:
+                    pass
+                next_tick += HEARTBEAT_INTERVAL
+            time.sleep(0.01)
 
     def _writer_loop(self) -> None:
         assert self._serial is not None
-        logger.debug("Telemetry writer loop started")
-        _next_send = time.monotonic()
+        next_send = time.monotonic()
         while True:
-            item = self._queue.get()
+            item = self._tx_queue.get()
             if item is _SENTINEL:
                 break
-            if isinstance(item, bytes):
-                # Enforce minimum inter-frame gap regardless of queue depth
-                now = time.monotonic()
-                wait = _next_send - now
-                if wait > 0:
-                    time.sleep(wait)
-                try:
-                    with self._write_lock:
-                        self._serial.write(item)
-                    tx_time = len(item) * self._secs_per_byte
-                    _next_send = time.monotonic() + tx_time
-                    logger.debug("Wrote telemetry frame (%d bytes)", len(item))
-                except serial.SerialException:
-                    logger.exception("SerialTransport write error")
-            else:
-                logger.warning("Unexpected item in queue: %s", type(item))
+            if not isinstance(item, bytes):
+                continue
+            now  = time.monotonic()
+            wait = next_send - now
+            if wait > 0:
+                time.sleep(wait)
+            try:
+                with self._write_lock:
+                    self._serial.write(item)
+                next_send = time.monotonic() + len(item) * self._secs_per_byte
+            except serial.SerialException:
+                logger.exception("SerialTransport: write error")
