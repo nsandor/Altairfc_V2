@@ -1,0 +1,59 @@
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Log session: /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-12_16-07-13
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Wrote 18 flight settings to DataStore
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task sphere_pitch is disabled in config, skipping registration
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Task photodiode is disabled in config, skipping registration
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Starting ALTAIR V2 flight computer
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Starting 9 task(s)
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel started
+2026-05-12T16:07:13  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.gps_driver[0m  GpsDriver: opened /dev/i2c-1 (fd=4)
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver ready on /dev/i2c-1
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.command_receiver_task[0m  CommandReceiverTask: ready (sharing transport with TelemetryTask)
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task radio_config started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.flight_stage_task[0m  FlightStageTask: initializing — writing all event.* keys to 0
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mdrivers.mcp23017[0m  MCP23017: opened bus 1 address 0x24
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger started
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: logging to /home/altairfc/ALTAIR_FC_V2/altairfc/logs/2026-05-12_16-07-13
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog started (ping interval 15.0s)
+2026-05-12T16:07:13  [1m[38;5;208mERROR   [0m  [2m[38;5;213mtasks.power_task[0m  PowerTask: failed to open INA3221 on /dev/i2c-1: ina3221_open failed on /dev/i2c-1 — check I2C bus, address 0x40, and manufacturer ID
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport: opened /dev/ttyUSB0 @ 57600 baud
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport opened
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: opened 13 CSV files
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.radio_config_task[0m  RadioConfigTask: modem 2/2/0 differs from toml 1/2/0 — applying
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.radio_config_task[0m  RadioConfigTask: writing data_rate=1 tx_power=2 channel=0
+2026-05-12T16:07:13  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.radio_config_task[0m  RadioConfigTask: modem ack received — rebooting
+2026-05-12T16:07:18  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-12T16:07:18  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-12T16:07:23  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-12T16:07:23  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-12T16:07:23  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.radio_config_task[0m  RadioConfigTask: modem did not re-link after reboot
+2026-05-12T16:07:23  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.radio_config_task[0m  RadioConfigTask: confirmed data_rate=1 tx_power=2 channel=0
+2026-05-12T16:07:28  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-12T16:07:28  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-12T16:07:33  [1m[38;5;220mWARNING [0m  [2m[38;5;213mtasks.rw_task[0m  RWTask: waiting for VESC on /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0 ([Errno 2] could not open port /dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0: [Errno 2] No such file or directory: '/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.4:1.0') — retrying in 5s
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.mavlink_task[0m  MavlinkTask: connecting to /dev/serial/by-id/usb-Auterion_PX4_FMU_v6X.x_0-if00 @ 115200 baud
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.lifecycle[0m  Received SIGINT — initiating graceful shutdown
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  Shutdown event received — stopping all tasks
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.watchdog[0m  Watchdog stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.scheduler[0m  Stopping all tasks
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.datalogger_task[0m  DataLoggerTask: all CSV files closed
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task datalogger stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task power stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task flight_stage stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task radio_config stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task command_receiver stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.transport[0m  SerialTransport: closed
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtelemetry.telemetry_task[0m  TelemetryTask: transport closed
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task telemetry stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mtasks.gps_task[0m  GpsTask: driver closed
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task gps stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task mavlink stopped
+2026-05-12T16:07:33  [1m[38;5;51mINFO    [0m  [2m[38;5;213mcore.task_base[0m  Task reaction_wheel stopped
+2026-05-12T16:07:34  [1m[38;5;51mINFO    [0m  [2m[38;5;213mmain[0m  ALTAIR V2 shutdown complete
