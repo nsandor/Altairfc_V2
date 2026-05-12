@@ -61,6 +61,9 @@ class RadioConfigTask(BaseTask):
     # ------------------------------------------------------------------
 
     def setup(self) -> None:
+        if not self._cfg.config_enabled:
+            logger.info("RadioConfigTask: config_enabled=false — transparent passthrough only")
+            return
         if not self._transport.wait_until_open(timeout=10.0):
             logger.warning("RadioConfigTask: transport not open after 10 s — skipping startup read")
             return
@@ -82,6 +85,9 @@ class RadioConfigTask(BaseTask):
             logger.info("RadioConfigTask: modem config matches settings.toml")
 
     def execute(self) -> None:
+        if not self._cfg.config_enabled:
+            return
+
         # Check watchdog first — independent of incoming commands.
         self._check_watchdog()
 
@@ -181,6 +187,9 @@ class RadioConfigTask(BaseTask):
         self.datastore.write("radio.data_rate", float(data_rate))
         self.datastore.write("radio.tx_power",  float(tx_power))
         self.datastore.write("radio.channel",   float(channel))
+        scale = self._cfg.rate_scale[data_rate] if 0 <= data_rate < len(self._cfg.rate_scale) else 1.0
+        self.datastore.write("radio.rate_scale", float(scale))
+        logger.info("RadioConfigTask: TX rate scale set to %.2f for data_rate=%d", scale, data_rate)
 
     def _clear_command_keys(self) -> None:
         self.datastore.write("command.radio_data_rate", None)
