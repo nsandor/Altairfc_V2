@@ -66,7 +66,7 @@ def _verify(packet: bytes) -> bool:
 # Packet builders
 # ---------------------------------------------------------------------------
 
-def build_heartbeat(seq: int, pc_uptime_ms: int, link_flag: int = 0x1E) -> bytes:
+def build_heartbeat(seq: int, pc_uptime_ms: int, link_flag: int = 0x00) -> bytes:
     body = bytes([
         SOF, TYPE_REQUEST, 0x00, CMD_HEARTBEAT, seq & 0xFF,
         0x0D,
