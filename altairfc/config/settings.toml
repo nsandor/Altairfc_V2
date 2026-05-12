@@ -96,9 +96,10 @@ baud = 115200
 # LR900P modem initial configuration applied on startup if it differs from
 # the modem's current settings.  Changing these values here takes effect on
 # the next FC boot; a RADIO_CONFIG ground command can change them at runtime.
-data_rate = 1   # 0=Low, 1=Mid, 2=High
-tx_power  = 2   # 0=Low, 1=Mid, 2=High
-channel   = 0   # 0-63
+data_rate  = 1    # 0=Low, 1=Mid, 2=High
+tx_power   = 2    # 0=Low, 1=Mid, 2=High
+channel    = 0    # 0-63
+watchdog_s = 30.0 # seconds without GS contact on new channel before rolling back to defaults
 
 [controller.reaction_wheel]
 Kp = 12740.0
