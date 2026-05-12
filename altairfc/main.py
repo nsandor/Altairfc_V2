@@ -50,6 +50,7 @@ import telemetry.packets.events          # noqa: F401
 import telemetry.packets.ack             # noqa: F401
 import telemetry.packets.flight_settings  # noqa: F401
 import telemetry.packets.pointing         # noqa: F401
+import telemetry.packets.radio_config     # noqa: F401
 
 # Import command modules so their @register decorators populate command_registry
 import telemetry.commands.arm            # noqa: F401
@@ -57,6 +58,7 @@ import telemetry.commands.launch_ok      # noqa: F401
 import telemetry.commands.ping           # noqa: F401
 import telemetry.commands.update_setting  # noqa: F401
 import telemetry.commands.gs_gps         # noqa: F401
+import telemetry.commands.radio_config    # noqa: F401
 
 from tasks.gps_task import GpsTask
 from tasks.mavlink_task import MavlinkTask
@@ -70,6 +72,7 @@ from telemetry.telemetry_task import TelemetryTask
 from telemetry.transport import SerialTransport
 from tasks.pitch_task import PitchTask
 from tasks.datalogger_task import DataLoggerTask
+from tasks.radio_config_task import RadioConfigTask
 
 
 def main() -> None:
@@ -208,8 +211,17 @@ def main() -> None:
                 buzzer=buzzer,
             )
         )
+        scheduler.register(
+            RadioConfigTask(
+                name="radio_config",
+                period_s=config.tasks["radio_config"].period_s,
+                datastore=datastore,
+                transport=telemetry_transport,
+                radio_config=config.radio_config,
+            )
+        )
     else:
-        logger.info("Telemetry radio not configured — TelemetryTask and CommandReceiverTask skipped")
+        logger.info("Telemetry radio not configured — TelemetryTask, CommandReceiverTask, and RadioConfigTask skipped")
 
     scheduler.register(
         FlightStageTask(

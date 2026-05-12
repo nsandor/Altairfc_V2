@@ -71,6 +71,13 @@ class FlightStageConfig:
 
 
 @dataclass
+class RadioConfig:
+    data_rate: int = 1   # 0=Low, 1=Mid, 2=High
+    tx_power:  int = 2   # 0=Low, 1=Mid, 2=High
+    channel:   int = 0   # 0-63
+
+
+@dataclass
 class GroundStationConfig:
     latitude: float
     longitude: float
@@ -90,6 +97,7 @@ class SystemConfig:
     ground_station: GroundStationConfig = field(
         default_factory=lambda: GroundStationConfig(latitude=0.0, longitude=0.0, altitude=0.0)
     )
+    radio_config: RadioConfig = field(default_factory=RadioConfig)
     log_level: str = "INFO"
     monitor_interval_s: float = 5.0
     watchdog_sec: float = 30.0
@@ -152,6 +160,13 @@ class SystemConfig:
         if not log_root.is_absolute():
             log_root = Path(__file__).parent.parent / log_root
 
+        rc_raw = data.get("radio_config", {})
+        radio_config = RadioConfig(
+            data_rate=rc_raw.get("data_rate", 1),
+            tx_power=rc_raw.get("tx_power",  2),
+            channel=rc_raw.get("channel",    0),
+        )
+
         return cls(
             mavlink=mavlink,
             telemetry=telemetry,
@@ -161,6 +176,7 @@ class SystemConfig:
             tasks=tasks,
             flight_stage=flight_stage,
             ground_station=ground_station,
+            radio_config=radio_config,
             log_level=system.get("log_level", "INFO"),
             monitor_interval_s=system.get("monitor_interval_s"),
             watchdog_sec=system.get("watchdog_sec"),

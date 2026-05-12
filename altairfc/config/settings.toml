@@ -51,6 +51,10 @@ period_s = 0.5    # 2 Hz
 enabled  = true
 period_s = 0.05   # 20 Hz tick — each packet logged at its own TX_RATE_HZ
 
+[tasks.radio_config]
+enabled  = true
+period_s = 0.5    # 2 Hz — command poll rate; actual radio I/O is blocking
+
 [datalogger]
 log_root = "logs"   # relative to altairfc/; absolute paths also accepted
 
@@ -87,6 +91,14 @@ baud = 115200
 port = "/dev/serial/by-path/platform-fd500000.pcie-pci-0000:01:00.0-usb-0:1.3:1.0"
 baud = 115200
 
+
+[radio_config]
+# LR900P modem initial configuration applied on startup if it differs from
+# the modem's current settings.  Changing these values here takes effect on
+# the next FC boot; a RADIO_CONFIG ground command can change them at runtime.
+data_rate = 1   # 0=Low, 1=Mid, 2=High
+tx_power  = 2   # 0=Low, 1=Mid, 2=High
+channel   = 0   # 0-63
 
 [controller.reaction_wheel]
 Kp = 12740.0
