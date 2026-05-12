@@ -80,7 +80,8 @@ class SerialTransport:
         self._linked        = False
         self._config_active = False  # True while read_config/write_config is running
         self._hb_gate       = threading.Event()
-        self._hb_gate.set()  # starts unblocked (heartbeats allowed)
+        self._hb_gate.set()          # starts unblocked (heartbeats allowed)
+        self._hb_response   = threading.Event()  # set each time a heartbeat response arrives
 
         self._assembler = FrameAssembler(self._on_lr_frame)
 
@@ -177,20 +178,30 @@ class SerialTransport:
     def is_linked(self) -> bool:
         return self._linked
 
+    def _enter_config_mode(self, timeout: float = 2.0) -> bool:
+        """
+        Send a 0x1E heartbeat and wait for the modem to acknowledge it.
+        Returns True if the modem responded within timeout, False otherwise.
+        Must be called with _hb_gate already cleared.
+        """
+        self._hb_response.clear()
+        self._priority_queue.put(
+            build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x1E))
+        return self._hb_response.wait(timeout=timeout)
+
     def read_config(self, timeout: float = 3.0) -> ConfigResponse | None:
         self._flush_cfg_queue()
         self._config_active = True
-        self._hb_gate.clear()  # pause heartbeats while config exchange is in progress
+        self._hb_gate.clear()
         try:
-            # Send one 0x1E heartbeat immediately to put the modem into config mode,
-            # then send the read request.
-            self._priority_queue.put(
-                build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x1E))
+            if not self._enter_config_mode(timeout=min(2.0, timeout)):
+                logger.warning("SerialTransport: modem did not respond to config-mode heartbeat")
+                return None
             self._priority_queue.put(build_config_read(self._next_lr_seq()))
             return self._wait_cfg(SUBBLOCK_READ, timeout)
         finally:
             self._config_active = False
-            self._hb_gate.set()  # resume normal heartbeats
+            self._hb_gate.set()
 
     def write_config(self, data_rate: int, tx_power: int, channel: int,
                      timeout: float = 3.0) -> WriteAckResponse | None:
@@ -202,15 +213,15 @@ class SerialTransport:
             raise ValueError("channel must be 0-63")
         self._flush_cfg_queue()
         self._config_active = True
-        self._hb_gate.clear()  # pause heartbeats so they don't interrupt the write exchange
+        self._hb_gate.clear()
         try:
-            self._priority_queue.put(
-                build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x1E))
+            if not self._enter_config_mode(timeout=min(2.0, timeout)):
+                logger.warning("SerialTransport: modem did not respond to config-mode heartbeat")
+                return None
             self._priority_queue.put(
                 build_config_write(self._next_lr_seq(), data_rate, tx_power, channel))
             result = self._wait_cfg(SUBBLOCK_WRITE, timeout)
-            # Modem reboots after a write — mark link as down so callers can wait
-            # for a fresh heartbeat before issuing a read_config().
+            # Modem reboots after a write — mark link down so callers can detect it.
             self._linked = False
             return result
         finally:
@@ -254,6 +265,7 @@ class SerialTransport:
     def _on_lr_frame(self, raw: bytes) -> None:
         if parse_heartbeat_response(raw) is not None:
             self._linked = True
+            self._hb_response.set()
             return
         cfg = parse_config_response(raw)
         if cfg is not None:
