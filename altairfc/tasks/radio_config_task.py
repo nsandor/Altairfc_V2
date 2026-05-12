@@ -157,10 +157,17 @@ class RadioConfigTask(BaseTask):
         else:
             logger.info("RadioConfigTask: modem ack received — rebooting")
 
-        # Modem reboots after a config write; wait before re-reading.
-        self._stop_event.wait(timeout=3.5)
+        # Modem reboots after a config write; wait for it to come back up.
+        self._stop_event.wait(timeout=5.0)
         if self._stop_event.is_set():
             return
+
+        # Wait for the heartbeat link to re-establish before reading config.
+        deadline = time.monotonic() + 5.0
+        while not self._transport.is_linked() and time.monotonic() < deadline:
+            self._stop_event.wait(timeout=0.1)
+        if not self._transport.is_linked():
+            logger.warning("RadioConfigTask: modem did not re-link after reboot")
 
         confirmed = self._transport.read_config(timeout=4.0)
         if confirmed is None:

@@ -79,6 +79,8 @@ class SerialTransport:
         self._start_t       = 0.0
         self._linked        = False
         self._config_active = False  # True while read_config/write_config is running
+        self._hb_gate       = threading.Event()
+        self._hb_gate.set()  # starts unblocked (heartbeats allowed)
 
         self._assembler = FrameAssembler(self._on_lr_frame)
 
@@ -178,11 +180,17 @@ class SerialTransport:
     def read_config(self, timeout: float = 3.0) -> ConfigResponse | None:
         self._flush_cfg_queue()
         self._config_active = True
+        self._hb_gate.clear()  # pause heartbeats while config exchange is in progress
         try:
+            # Send one 0x1E heartbeat immediately to put the modem into config mode,
+            # then send the read request.
+            self._priority_queue.put(
+                build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x1E))
             self._priority_queue.put(build_config_read(self._next_lr_seq()))
             return self._wait_cfg(SUBBLOCK_READ, timeout)
         finally:
             self._config_active = False
+            self._hb_gate.set()  # resume normal heartbeats
 
     def write_config(self, data_rate: int, tx_power: int, channel: int,
                      timeout: float = 3.0) -> WriteAckResponse | None:
@@ -194,12 +202,20 @@ class SerialTransport:
             raise ValueError("channel must be 0-63")
         self._flush_cfg_queue()
         self._config_active = True
+        self._hb_gate.clear()  # pause heartbeats so they don't interrupt the write exchange
         try:
             self._priority_queue.put(
+                build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x1E))
+            self._priority_queue.put(
                 build_config_write(self._next_lr_seq(), data_rate, tx_power, channel))
-            return self._wait_cfg(SUBBLOCK_WRITE, timeout)
+            result = self._wait_cfg(SUBBLOCK_WRITE, timeout)
+            # Modem reboots after a write — mark link as down so callers can wait
+            # for a fresh heartbeat before issuing a read_config().
+            self._linked = False
+            return result
         finally:
             self._config_active = False
+            self._hb_gate.set()
 
     # ------------------------------------------------------------------
     # Internal — LR900P helpers
@@ -283,11 +299,14 @@ class SerialTransport:
     def _heartbeat_loop(self) -> None:
         next_tick = time.monotonic()
         while self._running:
+            # Block here while a config exchange is in progress — read/write_config
+            # enqueues its own 0x1E heartbeat before the command frame and resumes
+            # this loop via _hb_gate.set() in its finally block.
+            self._hb_gate.wait()
             now = time.monotonic()
             if now >= next_tick:
-                link_flag = 0x1E if self._config_active else 0x00
                 self._priority_queue.put(
-                    build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag))
+                    build_heartbeat(self._next_lr_seq(), self._pc_uptime_ms(), link_flag=0x00))
                 next_tick += HEARTBEAT_INTERVAL
             time.sleep(0.01)
 
