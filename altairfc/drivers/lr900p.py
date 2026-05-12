@@ -151,7 +151,7 @@ class FrameAssembler:
 
     def _process(self) -> None:
         buf = self._buf
-        while len(buf) >= 6:
+        while True:
             sof_idx = buf.find(SOF)
             if sof_idx < 0:
                 self._buf = bytearray()
@@ -159,6 +159,9 @@ class FrameAssembler:
             if sof_idx > 0:
                 self._buf = buf[sof_idx:]
                 buf = self._buf
+
+            if len(buf) < 6:
+                break
 
             expected = _PACKET_LENGTHS.get((buf[1], buf[3]))
             if expected is None:
