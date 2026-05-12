@@ -98,7 +98,7 @@ baud = 115200
 # the next FC boot; a RADIO_CONFIG ground command can change them at runtime.
 config_enabled = false  # true: read/write modem config on startup and handle GS commands
                         # false: transparent passthrough only — no config frames sent
-data_rate  = 2    # 0=Low, 1=Mid, 2=High
+data_rate  = 0    # 0=Low, 1=Mid, 2=High
 tx_power   = 2    # 0=Low, 1=Mid, 2=High
 channel    = 0    # 0-63
 watchdog_s = 30.0 # seconds without GS contact on new channel before rolling back to defaults

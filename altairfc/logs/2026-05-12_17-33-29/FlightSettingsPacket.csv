@@ -1,0 +1,5 @@
+time_unix,monotonic,termination_altitude_m,burst_altitude_m,burst_altitude_uncertainty_m,ascent_detect_window_s,ascent_detect_gain_m,apogee_fraction,landing_fraction,recovery_stationary_s,termination_confirm_drop_m,termination_confirm_window_s,rw_kp,rw_kd,rw_max_rpm,mm_kp,mm_kd,mm_max_current,pointing_activate_altitude_m,pointing_duration_min,gs_use_hardcoded,gs_lat,gs_lon,gs_alt
+1778621612.912,11909.921,25000.0,30000.0,2000.0,30.0,50.0,0.95,0.05,10.0,100.0,30.0,12740.0,1092.0,2150.0,0.005,0.02,4000.0,10000.0,120.0,1.0,45.54,-73.58,55.0
+1778621617.928,11914.937,25000.0,30000.0,2000.0,30.0,50.0,0.95,0.05,10.0,100.0,30.0,12740.0,1092.0,2150.0,0.005,0.02,4000.0,10000.0,120.0,1.0,45.54,-73.58,55.0
+1778621622.893,11919.902,25000.0,30000.0,2000.0,30.0,50.0,0.95,0.05,10.0,100.0,30.0,12740.0,1092.0,2150.0,0.005,0.02,4000.0,10000.0,120.0,1.0,45.54,-73.58,55.0
+1778621627.909,11924.918,25000.0,30000.0,2000.0,30.0,50.0,0.95,0.05,10.0,100.0,30.0,12740.0,1092.0,2150.0,0.005,0.02,4000.0,10000.0,120.0,1.0,45.54,-73.58,55.0
