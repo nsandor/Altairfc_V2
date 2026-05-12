@@ -72,9 +72,10 @@ class FlightStageConfig:
 
 @dataclass
 class RadioConfig:
-    data_rate: int = 1   # 0=Low, 1=Mid, 2=High
-    tx_power:  int = 2   # 0=Low, 1=Mid, 2=High
-    channel:   int = 0   # 0-63
+    data_rate:  int   = 1     # 0=Low, 1=Mid, 2=High
+    tx_power:   int   = 2     # 0=Low, 1=Mid, 2=High
+    channel:    int   = 0     # 0-63
+    watchdog_s: float = 30.0  # seconds without GS contact before rolling back a channel change
 
 
 @dataclass
@@ -162,9 +163,10 @@ class SystemConfig:
 
         rc_raw = data.get("radio_config", {})
         radio_config = RadioConfig(
-            data_rate=rc_raw.get("data_rate", 1),
-            tx_power=rc_raw.get("tx_power",  2),
-            channel=rc_raw.get("channel",    0),
+            data_rate=rc_raw.get("data_rate",   1),
+            tx_power=rc_raw.get("tx_power",     2),
+            channel=rc_raw.get("channel",       0),
+            watchdog_s=rc_raw.get("watchdog_s", 30.0),
         )
 
         return cls(

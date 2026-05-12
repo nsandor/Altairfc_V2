@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import dataclasses
 import logging
+import time
 from typing import TYPE_CHECKING
 
 from core.datastore import DataStore
@@ -157,6 +158,8 @@ class CommandReceiverTask(BaseTask):
             if self._buzzer is not None:
                 from drivers.buzzer import TUNE_PING
                 self._buzzer.play(TUNE_PING)
+
+        self.datastore.write("system.last_gs_contact_t", time.monotonic())
 
         ack = AckPacket(cmd_id=cmd_id, cmd_seq=cmd_seq, status=status)
         ack_frame = self._serializer.pack(ack, seq=self._ack_seq)
