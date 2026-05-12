@@ -305,8 +305,9 @@ class SerialTransport:
             try:
                 self._serial.write(item)
                 next_send = time.monotonic() + len(item) * self._secs_per_byte
-            except serial.SerialException:
-                logger.exception("SerialTransport: write error")
+            except serial.SerialException as e:
+                logger.error("SerialTransport: write error — %s", e)
+                self._handle_disconnect()
 
     def _heartbeat_loop(self) -> None:
         next_tick = time.monotonic()
@@ -322,10 +323,38 @@ class SerialTransport:
                 next_tick += HEARTBEAT_INTERVAL
             time.sleep(0.01)
 
+    def _handle_disconnect(self) -> None:
+        """Called by writer or reader on a hard serial error. Closes the port and
+        reconnects with exponential backoff. Blocks until reconnected or stopped."""
+        logger.warning("SerialTransport: port disconnected — attempting reconnect")
+        try:
+            self._serial.close()
+        except Exception:
+            pass
+        self._linked = False
+        self._hb_gate.clear()  # pause heartbeats while port is down
+
+        delay = 1.0
+        while self._running:
+            time.sleep(delay)
+            try:
+                self._serial = serial.Serial(self.port, self.baud, timeout=0.05)
+                logger.info("SerialTransport: reconnected to %s", self.port)
+                self._hb_gate.set()
+                return
+            except Exception as e:
+                logger.warning("SerialTransport: reconnect failed (%s) — retrying in %.0fs", e, delay)
+                delay = min(delay * 2, 30.0)
+
     def _reader_loop(self) -> None:
         while self._running:
             try:
                 data = self._serial.read(256)
+            except serial.SerialException as e:
+                if self._running:
+                    logger.error("SerialTransport: read error — %s", e)
+                    self._handle_disconnect()
+                continue
             except Exception:
                 if self._running:
                     time.sleep(0.1)
