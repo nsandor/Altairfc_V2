@@ -144,7 +144,7 @@ def main() -> None:
 
     scheduler.register(
         RWTask(
-            name="reaction_wheel",
+            name="rw_control",
             period_s=config.tasks["rw_control"].period_s,
             datastore=datastore,
             vesc_port=config.rw_esc,
@@ -170,15 +170,15 @@ def main() -> None:
         )
     )
 
-#    scheduler.register(
-#       MMTask(
-#            name="momentum_management",
-#            period_s=config.tasks["mm_control"].period_s,
-#            datastore=datastore,
-#            vesc_port=config.mm_esc,
-#            controller_config=config.controller["momentum_management"],
-#        )
-#    )
+    scheduler.register(
+        MMTask(
+            name="mm_control",
+            period_s=config.tasks["mm_control"].period_s,
+            datastore=datastore,
+            vesc_port=config.mm_esc,
+            controller_config=config.controller["momentum_management"],
+        )
+    )
 
     scheduler.register(
         PitchTask(
