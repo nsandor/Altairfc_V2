@@ -469,11 +469,11 @@ class FlightStageTask(BaseTask):
     def _stop_motor_tasks(self) -> None:
         if self._scheduler is None:
             return
-        for task_name in ("reaction_wheel", "momentum_management"):
-            task = self._scheduler.get_task(task_name)
-            if task is not None and task.is_alive:
-                logger.info("FlightStageTask: stopping %s", task_name)
-                task.stop()
+        task_name = "pointing_task"
+        task = self._scheduler.get_task(task_name)
+        if task is not None and task.is_alive:
+            logger.info("FlightStageTask: stopping %s", task_name)
+            task.stop()
 
     def _write_flag(self, key: str, value: int) -> None:
         """Write event.{key} to DataStore only if the value changed."""

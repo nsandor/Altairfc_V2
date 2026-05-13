@@ -68,7 +68,14 @@ class FlightStageConfig:
     pointing_duration_min:        float = 120.0 
 
 
-
+@dataclass
+class PointingConfig:
+    mm_enabled: bool = False
+    spinup_rpm: int = 2150
+    spinup_s: float = 5.0
+    stabilize_yaw_rate: float = 0.1
+    stability_threshold: float = 5.0
+    brake_current: int = 2000
 
 @dataclass
 class RadioConfig:
@@ -100,6 +107,7 @@ class SystemConfig:
     controller: dict[str, ControllerConfig]
     tasks: dict[str, TaskConfig]
     flight_stage: FlightStageConfig = field(default_factory=FlightStageConfig)
+    pointing: PointingConfig = field(default_factory=PointingConfig)
     ground_station: GroundStationConfig = field(
         default_factory=lambda: GroundStationConfig(latitude=0.0, longitude=0.0, altitude=0.0)
     )
@@ -151,6 +159,16 @@ class SystemConfig:
             pointing_duration_min=fs_raw.get("pointing_duration_min"),
         )
 
+        pointing_raw =  data.get("pointing", {})
+        pointing = PointingConfig(
+            mm_enabled=pointing_raw.get("mm_enabled"),
+            spinup_rpm=pointing_raw.get("spinup_rpm"),
+            spinup_s=pointing_raw.get("spinup_s"),
+            stabilize_yaw_rate=pointing_raw.get("stabilize_yaw_rate"),
+            stability_threshold=pointing_raw.get("stability_threshold"),
+            brake_current=pointing_raw.get("brake_current"),
+        )
+
         gs_raw = data.get("ground_station", {})
         ground_station = GroundStationConfig(
             latitude=gs_raw.get("latitude"),
@@ -184,6 +202,7 @@ class SystemConfig:
             controller=controller,
             tasks=tasks,
             flight_stage=flight_stage,
+            pointing=pointing,
             ground_station=ground_station,
             radio_config=radio_config,
             log_level=system.get("log_level", "INFO"),
