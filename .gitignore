@@ -16,6 +16,12 @@ __pycache__/
 ./claude/
 ./claude/*
 
+<<<<<<< HEAD
 # Flight logs
 .csv
 .log
+=======
+
+# logs
+./altairfc/logs/
+>>>>>>> b62fa30 (test)
