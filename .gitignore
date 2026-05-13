@@ -1,4 +1,4 @@
-# JS dependencies — reinstall with: npm install
+# JS dependencies - reinstall with: npm install
 node_modules/
 
 # Vite build output
@@ -9,19 +9,14 @@ dist-ssr/
 __pycache__/
 *.pyc
 .venv/
+.pytest_cache/
 
 # Editor
 .vscode/
 .idea/
-./claude/
-./claude/*
+.claude/
 
-<<<<<<< HEAD
-# Flight logs
-.csv
-.log
-=======
-
-# logs
-./altairfc/logs/*
-./altairfc/logs
+# Flight logs and generated data
+altairfc/logs/
+*.csv
+*.log
