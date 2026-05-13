@@ -229,6 +229,7 @@ def main() -> None:
             period_s=config.tasks["flight_stage"].period_s,
             datastore=datastore,
             config=config.flight_stage,
+            scheduler=scheduler,
         )
     )
 
