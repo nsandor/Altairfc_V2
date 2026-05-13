@@ -14,13 +14,9 @@ period_s = 0.02   # 50 Hz
 enabled = true
 period_s = 0.05    # 20 Hz tick — each packet type has its own TX_RATE_HZ set in its class
 
-[tasks.rw_control]
+[tasks.pointing]
 enabled = true
-period_s = 0.05   # 20 Hz
-
-[tasks.mm_control]
-enabled = false
-period_s = 5.0    # 0.2 Hz
+period_s = 0.05
 
 [tasks.sphere_pitch]
 enabled = false
@@ -71,6 +67,14 @@ termination_confirm_drop_m    = 100.0     # altitude drop required to confirm cu
 termination_confirm_window_s  = 30.0      # time window for termination confirmation (s)
 pointing_activate_altitude_m  = 10000   # GPS MSL altitude (m) above which motors activate
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
+
+[pointing]
+mm_enabled = false
+spinup_rpm = 2150
+spinup_s = 5.0
+stabilize_yaw_rate = 0.1
+stability_threshold = 5.0
+brake_current = 2000
 
 [system]
 log_level = "INFO"
