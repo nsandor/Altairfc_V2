@@ -13,14 +13,17 @@ def compute_error(
     # gs_coords must be formatted as [lat, lon, alt].
 
     gs_lat, gs_lon, gs_alt = gs_coords
-    x_gs, y_gs, z_gs = pm.geodetic2ecef(gs_lat, gs_lon, gs_alt)
-    r_gs = np.array([x_gs, y_gs, z_gs])
     lat, lon, alt = gps_coords
-    x_bal, y_bal, z_bal = pm.geodetic2ecef(lat, lon, alt)
-    r_bal = np.array([x_bal, y_bal, z_bal])
+    n, e, d = pm.geodetic2ned(
+        gs_lat,
+        gs_lon,
+        gs_alt,
+        lat,
+        lon,
+        alt,
+    )
 
-    r_err = r_gs - r_bal
-
+    r_err = np.array([n, e, d])
     x = r_err/np.linalg.norm(r_err)
 
     world_to_body = R.from_quat(attitude_q).as_matrix()
