@@ -29,6 +29,7 @@ def compute_error(
     world_to_body = R.from_quat(attitude_q).as_matrix()
     direction = world_to_body @ x
     azimuth_error_rad = np.arctan2(direction[1], direction[0])
-    pitch_error_rad = np.arctan2(direction[2], direction[0])
+    horizontal_distance = np.sqrt(direction[0]**2 + direction[1]**2)
+    pitch_error_rad = np.arctan2(direction[2], horizontal_distance) 
 
     return azimuth_error_rad, pitch_error_rad
