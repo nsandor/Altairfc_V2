@@ -79,8 +79,8 @@ watchdog_sec = 30.0   # systemd WatchdogSec — must match flight.service
 
 [ground_station]
 use_hardcoded = true   # true: always use lat/lon/alt below; false: use GS GPS command if received
-latitude = 45.5400
-longitude = -73.5800
+latitude = 45.49446
+longitude = -73.55218
 altitude = 55.0
 
 [rw_esc]
