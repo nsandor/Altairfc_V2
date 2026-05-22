@@ -127,7 +127,7 @@ class PointingTask(BaseTask):
             self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
 
-            if abs(mm_cmd) > 200 and yaw > 0.3 and now - self._last_mm_command >= 5.0:
+            if abs(mm_cmd) > 200 and abs(yaw) > 0.3 and now - self._last_mm_command >= 5.0:
                 self._mm_active_command = int(mm_cmd)
                 self._mm_pulse_until = now + self._mm_pulse_width_s
                 self._last_mm_command = now
