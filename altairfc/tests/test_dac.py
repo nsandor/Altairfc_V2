@@ -185,6 +185,11 @@ def main():
           f"POR={status['por']}, current_DAC={status['dac_value']}")
 
     if args.status:
+        # Re-read raw bytes to inspect both DAC register and EEPROM value
+        raw = dac.bus.read_i2c_block_data(dac.address, 0x00, 5)
+        print(f"[DEBUG] Raw read bytes: {[hex(b) for b in raw]}")
+        eeprom_val = ((raw[3] << 4) | (raw[4] >> 4)) & 0x0FFF
+        print(f"[INFO] EEPROM DAC value: {eeprom_val}")
         dac.close()
         return
 
