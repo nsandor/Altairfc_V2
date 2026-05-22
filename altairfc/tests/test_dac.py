@@ -94,7 +94,6 @@ class MCP4725:
 
         msg = smbus2.i2c_msg.write(self.address, [byte0, byte1])
         self.bus.i2c_rdwr(msg)
-        print(f"  DAC write: value={value}, byte0=0x{byte0:02X}, byte1=0x{byte1:02X}")
 
     def read_status(self) -> dict:
         """
@@ -138,8 +137,11 @@ def sweep(dac: MCP4725, step: int, delay: float) -> None:
         while True:
             # Ramp up
             t0 = time.monotonic()
-            for v in range(0, MCP4725_MAX_VALUE + 1, step):
+            for i, v in enumerate(range(0, MCP4725_MAX_VALUE + 1, step)):
                 dac.set_voltage_raw(v)
+                if i % 10 == 0:
+                    readback = dac.read_status()["dac_value"]
+                    print(f"  wrote={v}, readback={readback}")
                 if delay > 0:
                     time.sleep(delay)
             dac.set_voltage_raw(MCP4725_MAX_VALUE)
