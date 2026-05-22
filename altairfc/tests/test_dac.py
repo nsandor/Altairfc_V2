@@ -128,7 +128,8 @@ def sweep(dac: MCP4725, step: int, delay: float) -> None:
         step:  Increment/decrement per write (larger = faster but coarser)
         delay: Seconds to sleep between writes (0 for max speed)
     """
-    print(f"[INFO] Sweeping: step={step}, delay={delay:.4f}s  (Ctrl-C to stop)\n")
+    ramp_time = (MCP4725_MAX_VALUE / step) * delay
+    print(f"[INFO] Sweeping: step={step}, delay={delay:.6f}s, ramp time≈{ramp_time:.2f}s  (Ctrl-C to stop)\n")
 
     cycle = 0
     try:
@@ -162,8 +163,8 @@ def main():
     parser.add_argument("--bus",   type=int,   default=1,     help="I2C bus number (default: 1)")
     parser.add_argument("--addr",  type=lambda x: int(x, 0),
                                                default=0x60,  help="I2C address (default: 0x60)")
-    parser.add_argument("--step",  type=int,   default=8,     help="DAC step size per write (default: 8)")
-    parser.add_argument("--delay", type=float, default=0.001, help="Delay between writes in seconds (default: 0.001)")
+    parser.add_argument("--step",  type=int,   default=1,        help="DAC step size per write (default: 1)")
+    parser.add_argument("--delay", type=float, default=0.000610, help="Delay between writes in seconds (default: 0.000610 → ~2.5s per ramp)")
     parser.add_argument("--status", action="store_true",      help="Print device status and exit")
     args = parser.parse_args()
 
