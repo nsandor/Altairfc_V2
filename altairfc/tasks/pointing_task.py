@@ -110,9 +110,9 @@ class PointingTask(BaseTask):
             self.mm.close()
     
     def _point(self) -> None:
-        quat, pos, gs_pos, yaw_rate = self._read()
+        quat, pos, gs_pos, yaw_rate, yaw = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
-        control_signal = self.rw_controller.output(az_err, yaw_rate) + self._spinup_rpm
+        control_signal = self.rw_controller.output(yaw, yaw_rate) + self._spinup_rpm
         self.datastore.write("pointing.az_error", az_err)
         self.datastore.write("pointing.control_signal", control_signal)
         self.rw.set_rpm(int(control_signal))
@@ -177,7 +177,8 @@ class PointingTask(BaseTask):
                 if all(v is not None for v in (gs_lat, gs_lon, gs_alt)) else self._default_gs_pos
             )
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
-        return quat, pos, gs_pos, yaw_rate
+        yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
+        return quat, pos, gs_pos, yaw_rate, yaw
     
     def _check(self):
         if int(self.datastore.read("event.pointing_active", default=0.0)) != 1:
