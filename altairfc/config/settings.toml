@@ -65,7 +65,7 @@ landing_fraction              = 0.05      # landing declared when alt ≤ this �
 recovery_stationary_s         = 10.0      # seconds of altitude stationary (±2 m) → recovery
 termination_confirm_drop_m    = 100.0     # altitude drop required to confirm cutdown worked (m)
 termination_confirm_window_s  = 30.0      # time window for termination confirmation (s)
-pointing_activate_altitude_m  = 10000   # GPS MSL altitude (m) above which motors activate
+pointing_activate_altitude_m  = 40   # GPS MSL altitude (m) above which motors activate
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
 
 [pointing]
@@ -111,16 +111,16 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel]
-Kp = 12740.0
-Kd = 1092.0
+Kp = 28719.6
+Kd = 1233.96
 Ki = 0.0
 max_rpm = 2150.0
 min_rpm = -2130.0
 
 
 [controller.momentum_management]
-Kp = 0.005
-Kd = 0.02
-Ki = 0.0
+Kp = 0.0
+Kd = 734.0
+Ki = 9.0
 max_current = 4000.0
 min_current = -4000.0
