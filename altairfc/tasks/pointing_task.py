@@ -122,12 +122,12 @@ class PointingTask(BaseTask):
         self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None:
-            rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm) - self._spinup_rpm
-            mm_cmd = self.mm_controller.output(rpm_err) 
-            self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
 
-            if abs(mm_cmd) > 200 and abs(yaw) > 0.3 and now - self._last_mm_command >= 5.0:
+            if abs(mm_cmd) > 200 and abs(yaw) > 0.1 and now - self._last_mm_command >= 5.0:
+                rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm) - self._spinup_rpm
+                mm_cmd = self.mm_controller.output(rpm_err) 
+                self.datastore.write("pointing.mm_control_signal", mm_cmd)
                 self._mm_active_command = int(mm_cmd)
                 self._mm_pulse_until = now + self._mm_pulse_width_s
                 self._last_mm_command = now
