@@ -92,7 +92,8 @@ class MCP4725:
         byte0 = cmd | MCP4725_POWERDOWN_NORMAL | ((value >> 8) & 0x0F)
         byte1 = value & 0xFF
 
-        self.bus.write_i2c_block_data(self.address, byte0, [byte1])
+        msg = smbus2.i2c_msg.write(self.address, [byte0, byte1])
+        self.bus.i2c_rdwr(msg)
 
     def read_status(self) -> dict:
         """
