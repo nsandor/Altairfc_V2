@@ -135,24 +135,26 @@ def sweep(dac: MCP4725, step: int, delay: float) -> None:
     try:
         while True:
             # Ramp up
+            t0 = time.monotonic()
             for v in range(0, MCP4725_MAX_VALUE + 1, step):
                 dac.set_voltage_raw(v)
                 if delay > 0:
                     time.sleep(delay)
-
-            # Ensure we hit exactly 4095 if step doesn't divide evenly
             dac.set_voltage_raw(MCP4725_MAX_VALUE)
+            up_time = time.monotonic() - t0
+            print(f"  Cycle {cycle+1} ramp UP   done in {up_time:.3f}s  (DAC=4095)", flush=True)
 
             # Ramp down
+            t0 = time.monotonic()
             for v in range(MCP4725_MAX_VALUE, -1, -step):
                 dac.set_voltage_raw(v)
                 if delay > 0:
                     time.sleep(delay)
-
             dac.set_voltage_raw(0)
+            down_time = time.monotonic() - t0
+            print(f"  Cycle {cycle+1} ramp DOWN done in {down_time:.3f}s  (DAC=0)", flush=True)
 
             cycle += 1
-            print(f"\r  Cycles completed: {cycle}", end="", flush=True)
 
     except KeyboardInterrupt:
         print(f"\n[INFO] Stopped after {cycle} full cycle(s).")
@@ -163,8 +165,8 @@ def main():
     parser.add_argument("--bus",   type=int,   default=1,     help="I2C bus number (default: 1)")
     parser.add_argument("--addr",  type=lambda x: int(x, 0),
                                                default=0x60,  help="I2C address (default: 0x60)")
-    parser.add_argument("--step",  type=int,   default=1,        help="DAC step size per write (default: 1)")
-    parser.add_argument("--delay", type=float, default=0.000610, help="Delay between writes in seconds (default: 0.000610 → ~2.5s per ramp)")
+    parser.add_argument("--step",  type=int,   default=41,    help="DAC step size per write (default: 41 → ~100 steps across full range)")
+    parser.add_argument("--delay", type=float, default=0.025, help="Delay between writes in seconds (default: 0.025 → ~2.5s per ramp)")
     parser.add_argument("--status", action="store_true",      help="Print device status and exit")
     args = parser.parse_args()
 
