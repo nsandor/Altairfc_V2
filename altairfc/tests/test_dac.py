@@ -30,8 +30,8 @@ except ImportError:
     sys.exit(1)
 
 # MCP4725 register/command constants
-MCP4725_CMD_WRITEDAC        = 0x40  # Write to DAC register (volatile, no EEPROM)
-MCP4725_CMD_WRITEDAC_EEPROM = 0x60  # Write to DAC + EEPROM (survives power cycle)
+MCP4725_CMD_WRITEDAC        = 0x00  # Fast write to DAC (2-byte, volatile)
+MCP4725_CMD_WRITEDAC_EEPROM = 0x60  # Write to DAC + EEPROM (3-byte, survives power cycle)
 MCP4725_MAX_VALUE           = 4095  # 12-bit DAC full scale
 MCP4725_POWERDOWN_NORMAL    = 0x00  # Normal operation (no power-down)
 
