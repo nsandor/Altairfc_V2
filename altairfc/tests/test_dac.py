@@ -94,6 +94,7 @@ class MCP4725:
 
         msg = smbus2.i2c_msg.write(self.address, [byte0, byte1])
         self.bus.i2c_rdwr(msg)
+        print(f"  DAC write: value={value}, byte0=0x{byte0:02X}, byte1=0x{byte1:02X}")
 
     def read_status(self) -> dict:
         """
