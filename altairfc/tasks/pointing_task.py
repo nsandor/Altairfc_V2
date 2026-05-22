@@ -185,3 +185,10 @@ class PointingTask(BaseTask):
             logger.info("PointingTask: run duration elapsed — stopping motor")
             self._stop_event.set()
             return
+        
+    def _set_state(self, state: PointingState) -> None:
+        if state != self._state:
+            logger.info("PointingTask: state %s -> %s", self._state.value, state.value)
+            self._state = state
+            self._state_started = time.monotonic()
+            self._stable_since = None

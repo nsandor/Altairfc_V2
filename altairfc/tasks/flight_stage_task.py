@@ -469,7 +469,7 @@ class FlightStageTask(BaseTask):
     def _stop_motor_tasks(self) -> None:
         if self._scheduler is None:
             return
-        task_name = "pointing_task"
+        task_name = "pointing"
         task = self._scheduler.get_task(task_name)
         if task is not None and task.is_alive:
             logger.info("FlightStageTask: stopping %s", task_name)
