@@ -171,6 +171,7 @@ def main():
     parser.add_argument("--step",  type=int,   default=41,    help="DAC step size per write (default: 41 → ~100 steps across full range)")
     parser.add_argument("--delay", type=float, default=0.025, help="Delay between writes in seconds (default: 0.025 → ~2.5s per ramp)")
     parser.add_argument("--status", action="store_true",      help="Print device status and exit")
+    parser.add_argument("--static", type=int, default=None,   help="Write a single fixed DAC value (0-4095) and hold")
     args = parser.parse_args()
 
     print("=" * 50)
@@ -184,6 +185,17 @@ def main():
           f"POR={status['por']}, current_DAC={status['dac_value']}")
 
     if args.status:
+        dac.close()
+        return
+
+    if args.static is not None:
+        print(f"[INFO] Writing static value {args.static} — probe VOUT now. Ctrl-C to exit.")
+        dac.set_voltage_raw(args.static)
+        try:
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            pass
         dac.close()
         return
 
