@@ -69,7 +69,7 @@ pointing_activate_altitude_m  = 40   # GPS MSL altitude (m) above which motors a
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
 
 [pointing]
-mm_enabled = false
+mm_enabled = true
 spinup_rpm = 2150
 spinup_s = 5.0
 stabilize_yaw_rate = 0.1
