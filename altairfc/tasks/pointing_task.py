@@ -89,7 +89,7 @@ class PointingTask(BaseTask):
 
         if self._state == PointingState.STABILIZE and self.mm is not None:
             self._check()
-            _, _, _, yaw_rate = self._read()
+            _, _, _, yaw_rate, _ = self._read()
             self.rw.set_rpm(self._spinup_rpm)
             self.mm.set_brake_current(self._brake_current)
             if abs(yaw_rate) < self._stabilize_yaw_rate:
