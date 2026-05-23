@@ -88,11 +88,16 @@ class MCP4725:
         else:
             cmd = MCP4725_CMD_WRITEDAC
 
-        # Pack 12-bit value into two bytes
-        byte0 = cmd | MCP4725_POWERDOWN_NORMAL | ((value >> 8) & 0x0F)
-        byte1 = value & 0xFF
-
-        self.bus.write_byte_data(self.address, byte0, byte1)
+        if persist:
+            # 3-byte write: [cmd, D11:D4, D3:D0<<4]
+            data_hi = (value >> 4) & 0xFF
+            data_lo = (value & 0x0F) << 4
+            self.bus.write_i2c_block_data(self.address, cmd, [data_hi, data_lo])
+        else:
+            # 2-byte fast write: [C1:D8, D7:D0]
+            byte0 = cmd | ((value >> 8) & 0x0F)
+            byte1 = value & 0xFF
+            self.bus.write_byte_data(self.address, byte0, byte1)
 
     def read_status(self) -> dict:
         """
@@ -136,11 +141,8 @@ def sweep(dac: MCP4725, step: int, delay: float) -> None:
         while True:
             # Ramp up
             t0 = time.monotonic()
-            for i, v in enumerate(range(0, MCP4725_MAX_VALUE + 1, step)):
+            for v in range(0, MCP4725_MAX_VALUE + 1, step):
                 dac.set_voltage_raw(v)
-                if i % 10 == 0:
-                    readback = dac.read_status()["dac_value"]
-                    print(f"  wrote={v}, readback={readback}")
                 if delay > 0:
                     time.sleep(delay)
             dac.set_voltage_raw(MCP4725_MAX_VALUE)
@@ -172,6 +174,7 @@ def main():
     parser.add_argument("--delay", type=float, default=0.025, help="Delay between writes in seconds (default: 0.025 → ~2.5s per ramp)")
     parser.add_argument("--status", action="store_true",      help="Print device status and exit")
     parser.add_argument("--static", type=int, default=None,   help="Write a single fixed DAC value (0-4095) and hold")
+    parser.add_argument("--save",   type=int, default=None,   help="Save a DAC value (0-4095) to EEPROM as power-on default")
     args = parser.parse_args()
 
     print("=" * 50)
@@ -190,6 +193,15 @@ def main():
         print(f"[DEBUG] Raw read bytes: {[hex(b) for b in raw]}")
         eeprom_val = ((raw[3] << 4) | (raw[4] >> 4)) & 0x0FFF
         print(f"[INFO] EEPROM DAC value: {eeprom_val}")
+        dac.close()
+        return
+
+    if args.save is not None:
+        print(f"[INFO] Saving {args.save} to EEPROM as power-on default...")
+        dac.set_voltage_raw(args.save, persist=True)
+        time.sleep(0.05)  # EEPROM write takes ~25ms
+        status = dac.read_status()
+        print(f"[INFO] Readback DAC value: {status['dac_value']}")
         dac.close()
         return
 
