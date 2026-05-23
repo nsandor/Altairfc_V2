@@ -33,6 +33,7 @@ except ImportError:
 MCP4725_CMD_WRITEDAC        = 0x00  # Fast write to DAC (2-byte, volatile)
 MCP4725_CMD_WRITEDAC_EEPROM = 0x60  # Write to DAC + EEPROM (3-byte, survives power cycle)
 MCP4725_MAX_VALUE           = 4095  # 12-bit DAC full scale
+MCP4725_SWEEP_MAX           = 2482  # 2.0V with 3.3V VDD (4095 * 2/3.3)
 MCP4725_POWERDOWN_NORMAL    = 0x00  # Normal operation (no power-down)
 
 
@@ -126,32 +127,32 @@ class MCP4725:
 
 def sweep(dac: MCP4725, step: int, delay: float) -> None:
     """
-    Triangle-wave sweep: ramp up 0 → 4095 then ramp down 4095 → 0, repeat.
+    Triangle-wave sweep: ramp up 0 → 2V then ramp down 2V → 0, repeat.
 
     Args:
         dac:   Initialised MCP4725 instance
         step:  Increment/decrement per write (larger = faster but coarser)
         delay: Seconds to sleep between writes (0 for max speed)
     """
-    ramp_time = (MCP4725_MAX_VALUE / step) * delay
-    print(f"[INFO] Sweeping: step={step}, delay={delay:.6f}s, ramp time≈{ramp_time:.2f}s  (Ctrl-C to stop)\n")
+    ramp_time = (MCP4725_SWEEP_MAX / step) * delay
+    print(f"[INFO] Sweeping 0–2V (DAC 0–{MCP4725_SWEEP_MAX}): step={step}, delay={delay:.6f}s, ramp time≈{ramp_time:.2f}s  (Ctrl-C to stop)\n")
 
     cycle = 0
     try:
         while True:
             # Ramp up
             t0 = time.monotonic()
-            for v in range(0, MCP4725_MAX_VALUE + 1, step):
+            for v in range(0, MCP4725_SWEEP_MAX + 1, step):
                 dac.set_voltage_raw(v)
                 if delay > 0:
                     time.sleep(delay)
-            dac.set_voltage_raw(MCP4725_MAX_VALUE)
+            dac.set_voltage_raw(MCP4725_SWEEP_MAX)
             up_time = time.monotonic() - t0
-            print(f"  Cycle {cycle+1} ramp UP   done in {up_time:.3f}s  (DAC=4095)", flush=True)
+            print(f"  Cycle {cycle+1} ramp UP   done in {up_time:.3f}s  (DAC={MCP4725_SWEEP_MAX}, ~2.0V)", flush=True)
 
             # Ramp down
             t0 = time.monotonic()
-            for v in range(MCP4725_MAX_VALUE, -1, -step):
+            for v in range(MCP4725_SWEEP_MAX, -1, -step):
                 dac.set_voltage_raw(v)
                 if delay > 0:
                     time.sleep(delay)
