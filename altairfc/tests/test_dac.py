@@ -33,7 +33,7 @@ except ImportError:
 MCP4725_CMD_WRITEDAC        = 0x00  # Fast write to DAC (2-byte, volatile)
 MCP4725_CMD_WRITEDAC_EEPROM = 0x60  # Write to DAC + EEPROM (3-byte, survives power cycle)
 MCP4725_MAX_VALUE           = 4095  # 12-bit DAC full scale
-MCP4725_SWEEP_MAX           = 2482  # 2.0V with 3.3V VDD (4095 * 2/3.3)
+MCP4725_SWEEP_MAX           = 2000  # sweep ceiling in DAC counts
 MCP4725_POWERDOWN_NORMAL    = 0x00  # Normal operation (no power-down)
 
 
@@ -135,7 +135,8 @@ def sweep(dac: MCP4725, step: int, delay: float) -> None:
         delay: Seconds to sleep between writes (0 for max speed)
     """
     ramp_time = (MCP4725_SWEEP_MAX / step) * delay
-    print(f"[INFO] Sweeping 0–2V (DAC 0–{MCP4725_SWEEP_MAX}): step={step}, delay={delay:.6f}s, ramp time≈{ramp_time:.2f}s  (Ctrl-C to stop)\n")
+    peak_v = MCP4725_SWEEP_MAX / MCP4725_MAX_VALUE * 3.3
+    print(f"[INFO] Sweeping DAC 0–{MCP4725_SWEEP_MAX} (~{peak_v:.2f}V): step={step}, delay={delay:.6f}s, ramp time≈{ramp_time:.2f}s  (Ctrl-C to stop)\n")
 
     cycle = 0
     try:
