@@ -40,11 +40,13 @@ class PointingTask(BaseTask):
         self._stabilize_yaw_rate = pointing_config.stabilize_yaw_rate
         self._stability_threshold = pointing_config.stability_threshold
         self._brake_current = pointing_config.brake_current
+        self._mm_pulse_length = pointing_config.mm_pulse_length
+        self._mm_control_period = pointing_config.mm_control_period
         self.period = period_s
         self.rw = RWDriver(rw_port.port) 
         self.mm = MMDriver(mm_port.port) if self._mm_enabled else None
         self.rw_controller = Controller(rw_controller_config, period_s)
-        self.mm_controller = Controller(mm_controller_config, period_s)
+        self.mm_controller = Controller(mm_controller_config, self._mm_control_period)
         self._default_gs_pos = [ground_station.latitude, ground_station.longitude, ground_station.altitude]
         
 
@@ -55,7 +57,6 @@ class PointingTask(BaseTask):
         self._stable_since = None
         self._last_mm_command = 0.0
         self._mm_pulse_until = 0.0
-        self._mm_active_command = 0
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -76,19 +77,19 @@ class PointingTask(BaseTask):
         if active == 1:
             if self.passed == False:
                 self.passed = True
-                self._set_state(PointingState.STABILIZE)
+                self._set_state(PointingState.SPINUP)
         
         if self._state == PointingState.IDLE and self.mm is not None:
             self.mm.set_brake_current(self._brake_current)
         
-        # if self._state == PointingState.SPINUP:
-        #     self._check()
-        #     self.rw.set_rpm(self._spinup_rpm)
-        #     if time.monotonic() - self._state_started >= self._spinup_s:
-        #         if self.mm is not None:
-        #             self._set_state(PointingState.STABILIZE)
-        #         else:
-        #             self._set_state(PointingState.POINTING)
+        if self._state == PointingState.SPINUP:
+            self._check()
+            self.rw.set_rpm(self._spinup_rpm)
+            if time.monotonic() - self._state_started >= self._spinup_s:
+                if self.mm is not None:
+                    self._set_state(PointingState.STABILIZE)
+                else:
+                    self._set_state(PointingState.POINTING)
 
         if self._state == PointingState.STABILIZE and self.mm is not None:
             self._check()
@@ -118,10 +119,7 @@ class PointingTask(BaseTask):
         control_signal = self.rw_controller.output(yaw, yaw_rate)
         self.datastore.write("pointing.az_error", az_err)
         self.datastore.write("pointing.control_signal", control_signal)
-        if abs(yaw) > 0.1:
-            self.rw.set_rpm(0)
-        if abs(yaw) < 0.1:
-            self.rw.set_rpm(int(control_signal))
+        self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
             rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm)
@@ -129,16 +127,12 @@ class PointingTask(BaseTask):
             self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
 
-            if now - self._last_mm_command >= 5.0:
-                self._mm_active_command = int(mm_cmd)
-                self._mm_pulse_until = now + 0.02
+            if now - self._last_mm_command >= self._mm_control_period:
+                self._mm_pulse_until = now + self._mm_pulse_length
                 self._last_mm_command = now
 
             if now < self._mm_pulse_until:
-                if yaw > 0:
-                    self.mm.set_current(-200)
-                if yaw <= 0:
-                    self.mm.set_current(200)
+                self.mm.set_current(mm_cmd)
             else:
                 self.mm.set_current(0)
             

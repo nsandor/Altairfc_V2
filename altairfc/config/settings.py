@@ -76,6 +76,8 @@ class PointingConfig:
     stabilize_yaw_rate: float = 0.1
     stability_threshold: float = 5.0
     brake_current: int = 2000
+    mm_pulse_length: float = 0.15
+    mm_control_period: float = 5.0
 
 @dataclass
 class RadioConfig:
@@ -167,6 +169,8 @@ class SystemConfig:
             stabilize_yaw_rate=pointing_raw.get("stabilize_yaw_rate"),
             stability_threshold=pointing_raw.get("stability_threshold"),
             brake_current=pointing_raw.get("brake_current"),
+            mm_pulse_length=pointing_raw.get("mm_pulse_length"),
+            mm_control_period=pointing_raw.get("mm_control_period"),
         )
 
         gs_raw = data.get("ground_station", {})
