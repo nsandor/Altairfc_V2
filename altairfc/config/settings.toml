@@ -72,7 +72,7 @@ pointing_duration_min         = 120.0     # how long to run motor control after 
 mm_enabled = false
 spinup_rpm = 0.0
 spinup_s = 0.0
-stabilize_yaw_rate = 0.3
+stabilize_yaw_rate = 1.5
 stability_threshold = 5.0
 brake_current = 2000
 mm_pulse_length = 0.15
@@ -115,9 +115,9 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel]
-Kp = 9000.0
-Kd = 960.0
-Ki = 0.0
+Kp = 1000.0
+Kd = 100.0
+Ki = 2.0
 max_rpm = 4300.0
 min_rpm = -4300.0
 
