@@ -132,15 +132,15 @@ class PointingTask(BaseTask):
         self.datastore.write("pointing.az_error", az_err)
         if self._is_saturated(rw_rpm):
             return
-        if yaw_rate > self._stabilize_yaw_rate:
+        if abs(yaw_rate) > self._stabilize_yaw_rate:
             logger.info("PointingTask: DETUMBLING MODE")
             control_signal = self.rw_controller.output(0.0, yaw_rate) #DETUMBLE
-        elif yaw_rate < self._stabilize_yaw_rate and abs(yaw) < 0.1:
+        elif abs(yaw_rate) < self._stabilize_yaw_rate and abs(yaw) < 0.1:
             logger.info("PointingTask: HOLD MODE")
-            control_signal = self.rw_controller.output(yaw) / 4 + rw_rpm #HOLD
+            control_signal = self.rw_controller.output(yaw) / 4  #HOLD
         else:
             control_signal = self.rw_controller.output(yaw) - rw_rpm * 0.1
-        self.rw.set_rpm(int(control_signal))
+        self.rw.set_current(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
             rpm_err = rw_rpm - self._spinup_rpm
