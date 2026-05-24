@@ -118,8 +118,8 @@ rate_scale = [0.1, 0.33, 1.0]
 Kp = 1000
 Kd = 80.0
 Ki = 0.0
-max_rpm = 500.0
-min_rpm = -500.0
+max_rpm = 1500.0
+min_rpm = -1500.0
 
 
 [controller.momentum_management]
