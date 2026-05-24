@@ -77,7 +77,7 @@ stability_threshold = 5.0
 brake_current = 2000
 mm_pulse_length = 0.15
 mm_control_period = 5.0
-saturation_rpm = 4300.0
+saturation_rpm = 3600.0
 saturation_s = 10.0
 
 [system]
