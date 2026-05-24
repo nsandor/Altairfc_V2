@@ -20,7 +20,7 @@ class Controller:
         I = self.Ki * self.e_int
         self.e_prev = error
 
-        output = P + D + I
+        output = P - D + I
         output = np.clip(output, self.min_value, self.max_value)
 
         return output
