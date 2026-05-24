@@ -76,24 +76,24 @@ class PointingTask(BaseTask):
         if active == 1:
             if self.passed == False:
                 self.passed = True
-                self._set_state(PointingState.SPINUP)
+                self._set_state(PointingState.STABILIZE)
         
         if self._state == PointingState.IDLE and self.mm is not None:
             self.mm.set_brake_current(self._brake_current)
         
-        if self._state == PointingState.SPINUP:
-            self._check()
-            self.rw.set_rpm(self._spinup_rpm)
-            if time.monotonic() - self._state_started >= self._spinup_s:
-                if self.mm is not None:
-                    self._set_state(PointingState.STABILIZE)
-                else:
-                    self._set_state(PointingState.POINTING)
+        # if self._state == PointingState.SPINUP:
+        #     self._check()
+        #     self.rw.set_rpm(self._spinup_rpm)
+        #     if time.monotonic() - self._state_started >= self._spinup_s:
+        #         if self.mm is not None:
+        #             self._set_state(PointingState.STABILIZE)
+        #         else:
+        #             self._set_state(PointingState.POINTING)
 
         if self._state == PointingState.STABILIZE and self.mm is not None:
             self._check()
             _, _, _, yaw_rate, _ = self._read()
-            self.rw.set_rpm(self._spinup_rpm)
+            # self.rw.set_rpm(self._spinup_rpm)
             self.mm.set_brake_current(self._brake_current)
             if abs(yaw_rate) < self._stabilize_yaw_rate:
                 if self._stable_since is None:
@@ -118,7 +118,10 @@ class PointingTask(BaseTask):
         control_signal = self.rw_controller.output(yaw, yaw_rate)
         self.datastore.write("pointing.az_error", az_err)
         self.datastore.write("pointing.control_signal", control_signal)
-        self.rw.set_rpm(int(control_signal))
+        if abs(yaw) > 0.1:
+            self.rw.set_rpm(0)
+        if abs(yaw) < 0.1:
+            self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
             rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm)
@@ -128,13 +131,13 @@ class PointingTask(BaseTask):
 
             if now - self._last_mm_command >= 5.0:
                 self._mm_active_command = int(mm_cmd)
-                self._mm_pulse_until = now + 0.05
+                self._mm_pulse_until = now + 0.02
                 self._last_mm_command = now
 
             if now < self._mm_pulse_until:
-                if rpm_err > 0:
+                if yaw > 0:
                     self.mm.set_current(-200)
-                if rpm_err <= 0:
+                if yaw <= 0:
                     self.mm.set_current(200)
             else:
                 self.mm.set_current(0)
