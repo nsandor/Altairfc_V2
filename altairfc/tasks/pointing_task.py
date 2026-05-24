@@ -130,7 +130,6 @@ class PointingTask(BaseTask):
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
-        self.datastore.write("pointing.control_signal", control_signal)
         if self._is_saturated(rw_rpm):
             return
         if yaw_rate > self._stabilize_yaw_rate:
