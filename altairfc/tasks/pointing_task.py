@@ -126,16 +126,16 @@ class PointingTask(BaseTask):
             self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
 
-            if now - self._last_mm_command >= 5.0:
+            if now - self._last_mm_command >= 2.0:
                 self._mm_active_command = int(mm_cmd)
-                self._mm_pulse_until = now + mm_cmd/2
+                self._mm_pulse_until = now + mm_cmd/4
                 self._last_mm_command = now
 
             if now < self._mm_pulse_until:
                 if rpm_err > 0:
-                    self.mm.set_current(-200)
+                    self.mm.set_current(-150)
                 if rpm_err <= 0:
-                    self.mm.set_current(200)
+                    self.mm.set_current(150)
             else:
                 self.mm.set_current(0)
             
