@@ -10,6 +10,8 @@ class RWDriver:
         self.port_name = port
         self.motor: VESCObject | None = None
         self.connected = False
+        self._last_rpm = 0
+        self.max_delta_rpm = 20
 
     def connect(self) -> bool:
         try:
@@ -46,8 +48,12 @@ class RWDriver:
             return None
         
     def set_rpm(self, rpm: int) -> None:
+        delta = rpm - self._last_rpm
+        delta = max(-self.max_delta_rpm, min(self.max_delta_rpm, delta))
+        limited_rpm = self._last_rpm + delta
+        self._last_rpm = limited_rpm
         if self.motor is not None:
-            self.motor.set_rpm(rpm)
+            self.motor.set_rpm(limited_rpm)
 
     def stop(self) -> None:
         if self.motor is not None:

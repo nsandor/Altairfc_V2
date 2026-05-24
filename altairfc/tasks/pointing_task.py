@@ -19,6 +19,7 @@ class PointingState(Enum):
     SPINUP = "spinup" # RW spinup
     STABILIZE = "stabilize" # MM stabilizes and large initial error correction
     POINTING = "pointing" # PID active pointing 
+    SATURATED = "saturated" # RW speed has exceeded saturation threshold
 
 class PointingTask(BaseTask):
     def __init__(
@@ -42,6 +43,8 @@ class PointingTask(BaseTask):
         self._brake_current = pointing_config.brake_current
         self._mm_pulse_length = pointing_config.mm_pulse_length
         self._mm_control_period = pointing_config.mm_control_period
+        self._saturation_rpm = pointing_config.saturation_rpm
+        self._saturation_s = pointing_config.saturation_s
         self.period = period_s
         self.rw = RWDriver(rw_port.port) 
         self.mm = MMDriver(mm_port.port) if self._mm_enabled else None
@@ -57,6 +60,7 @@ class PointingTask(BaseTask):
         self._stable_since = None
         self._last_mm_command = 0.0
         self._mm_pulse_until = 0.0
+        self._saturated_since = None
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -98,7 +102,7 @@ class PointingTask(BaseTask):
 
         if self._state == PointingState.STABILIZE and self.mm is not None:
             self._check()
-            _, _, _, yaw_rate, _ = self._read()
+            _, _, _, yaw_rate, _, _ = self._read()
             # self.rw.set_rpm(self._spinup_rpm)
             self.mm.set_brake_current(self._brake_current)
             if abs(yaw_rate) < self._stabilize_yaw_rate:
@@ -113,21 +117,32 @@ class PointingTask(BaseTask):
             self._check()
             self._point()
 
+        elif self._state == PointingState.SATURATED:
+            self._check()
+            self._desaturate()
+
     def teardown(self) -> None:
         self.rw.close()
         if self.mm is not None:
             self.mm.close()
     
     def _point(self) -> None:
-        quat, pos, gs_pos, yaw_rate, yaw = self._read()
+        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
-        control_signal = self.rw_controller.output(yaw, yaw_rate)
         self.datastore.write("pointing.az_error", az_err)
         self.datastore.write("pointing.control_signal", control_signal)
+        if self._is_saturated(rw_rpm):
+            return
+        if yaw_rate > self._stabilize_yaw_rate:
+            control_signal = self.rw_controller.output(0.0, yaw_rate) #DETUMBLE
+        elif yaw_rate < self._stabilize_yaw_rate and abs(yaw) < 0.1:
+            control_signal = self.rw_controller.output(yaw, yaw_rate) / 5 + rw_rpm #HOLD
+        else:
+            control_signal = self.rw_controller.output(yaw, yaw_rate) - rw_rpm * 0.2
         self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
-            rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm)
+            rpm_err = rw_rpm - self._spinup_rpm
             mm_cmd = self.mm_controller.output(rpm_err)
             self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
@@ -141,6 +156,33 @@ class PointingTask(BaseTask):
             else:
                 self.mm.set_current(0)
             
+    def _is_saturated(self, rw_rpm: float) -> bool:
+        now = time.monotonic()
+        saturated = abs(rw_rpm) >= self._saturation_rpm
+        self.datastore.write("pointing.rw_saturated", 1.0 if saturated else 0.0)
+
+        if not saturated:
+            self._saturated_since = None
+            self.datastore.write("pointing.saturation_elapsed_s", 0.0)
+            return False
+
+        if self._saturated_since is None:
+            self._saturated_since = now
+
+        elapsed = now - self._saturated_since
+        if elapsed >= self._saturation_s:
+            logger.warning("PointingTask: RW saturated")
+            self._set_state(PointingState.SATURATED)
+            return True
+        return False
+    
+    def _desaturate(self) -> None:
+        self.rw.set_rpm(0)
+        _, _, _, yaw_rate, yaw, _ = self._read()
+        if abs(yaw) <= 0.5 and abs(yaw_rate) <= self._stabilize_yaw_rate:
+            logger.info("PointingTask: desaturation successful, resuming pointing")
+            self._set_state(PointingState.POINTING)
+
     
     def _store(self) -> None:
         if self.rw is not None:
@@ -195,7 +237,8 @@ class PointingTask(BaseTask):
             )
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
         yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
-        return quat, pos, gs_pos, yaw_rate, yaw
+        rw_rpm = float(self.datastore.read("rw.rpm", default=0.0))/7
+        return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm
     
     def _check(self):
         if int(self.datastore.read("event.pointing_active", default=0.0)) != 1:
@@ -209,3 +252,4 @@ class PointingTask(BaseTask):
             self._state = state
             self._state_started = time.monotonic()
             self._stable_since = None
+            self._saturated_since = None

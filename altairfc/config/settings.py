@@ -78,6 +78,8 @@ class PointingConfig:
     brake_current: int = 2000
     mm_pulse_length: float = 0.15
     mm_control_period: float = 5.0
+    saturation_rpm: float = 3500.0
+    saturation_s: float = 5.0
 
 @dataclass
 class RadioConfig:
@@ -171,6 +173,8 @@ class SystemConfig:
             brake_current=pointing_raw.get("brake_current"),
             mm_pulse_length=pointing_raw.get("mm_pulse_length"),
             mm_control_period=pointing_raw.get("mm_control_period"),
+            saturation_rpm=pointing_raw.get("saturation_rpm", 3500.0),
+            saturation_s=pointing_raw.get("saturation_s", 5.0),
         )
 
         gs_raw = data.get("ground_station", {})
