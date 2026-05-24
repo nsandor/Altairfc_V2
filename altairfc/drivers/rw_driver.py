@@ -55,6 +55,10 @@ class RWDriver:
         if self.motor is not None:
             self.motor.set_rpm(limited_rpm)
 
+    def set_current(self, current: int) -> None:
+        if self.motor is not None:
+            self.motor.set_current(current)
+
     def stop(self) -> None:
         if self.motor is not None:
             self.motor.set_rpm(0)
