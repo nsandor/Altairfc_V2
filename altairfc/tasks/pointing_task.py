@@ -137,9 +137,9 @@ class PointingTask(BaseTask):
             control_signal = self.rw_controller.output(0.0, yaw_rate) #DETUMBLE
         elif abs(yaw_rate) < self._stabilize_yaw_rate and abs(yaw) < 0.1:
             logger.info("PointingTask: HOLD MODE")
-            control_signal = self.rw_controller.output(yaw, -yaw_rate) / 4  + rw_rpm #HOLD
+            control_signal = self.rw_controller.output(yaw, yaw_rate) / 4  + rw_rpm #HOLD
         else:
-            control_signal = self.rw_controller.output(yaw, -yaw_rate) / 10 + rw_rpm * 0.9
+            control_signal = self.rw_controller.output(yaw, yaw_rate) / 10 + rw_rpm * 0.9
         self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
