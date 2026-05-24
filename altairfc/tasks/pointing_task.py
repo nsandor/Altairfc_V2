@@ -116,13 +116,13 @@ class PointingTask(BaseTask):
     def _point(self) -> None:
         quat, pos, gs_pos, yaw_rate, yaw = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
-        control_signal = self.rw_controller.output(yaw, yaw_rate) + self._spinup_rpm
+        control_signal = self.rw_controller.output(yaw, yaw_rate)
         self.datastore.write("pointing.az_error", az_err)
         self.datastore.write("pointing.control_signal", control_signal)
         self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
-            rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm) - self._spinup_rpm
+            rpm_err = self.datastore.read("rw.rpm", default = self._spinup_rpm)
             mm_cmd = self.mm_controller.output(rpm_err)
             self.datastore.write("pointing.mm_control_signal", mm_cmd)
             now = time.monotonic()
