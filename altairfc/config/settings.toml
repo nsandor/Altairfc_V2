@@ -121,6 +121,6 @@ min_rpm = -2130.0
 [controller.momentum_management]
 Kp = 0.0
 Kd = 734.0
-Ki = 15.0
-max_current = 4000.0
-min_current = -4000.0
+Ki = 0.0
+max_current = 800.0
+min_current = -800.0
