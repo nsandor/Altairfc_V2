@@ -77,7 +77,12 @@ class PointingTask(BaseTask):
         if active == 1:
             if self.passed == False:
                 self.passed = True
-                self._set_state(PointingState.SPINUP)
+                if self._spinup_rpm != 0.0:
+                    self._set_state(PointingState.SPINUP)
+                elif self.mm is not None:
+                    self._set_state(PointingState.STABILIZE)
+                else:
+                    self._set_state(PointingState.POINTING)
         
         if self._state == PointingState.IDLE and self.mm is not None:
             self.mm.set_brake_current(self._brake_current)
