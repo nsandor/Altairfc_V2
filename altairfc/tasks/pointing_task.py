@@ -128,11 +128,14 @@ class PointingTask(BaseTask):
 
             if now - self._last_mm_command >= 5.0:
                 self._mm_active_command = int(mm_cmd)
-                self._mm_pulse_until = now + mm_cmd
+                self._mm_pulse_until = now + mm_cmd/2
                 self._last_mm_command = now
 
             if now < self._mm_pulse_until:
-                self.mm.set_current(200)
+                if rpm_err > 0:
+                    self.mm.set_current(200)
+                if rpm_err <= 0:
+                    self.mm.set_current(-200)
             else:
                 self.mm.set_current(0)
             
