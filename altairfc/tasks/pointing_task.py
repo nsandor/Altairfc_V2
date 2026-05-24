@@ -133,9 +133,9 @@ class PointingTask(BaseTask):
 
             if now < self._mm_pulse_until:
                 if rpm_err > 0:
-                    self.mm.set_current(200)
-                if rpm_err <= 0:
                     self.mm.set_current(-200)
+                if rpm_err <= 0:
+                    self.mm.set_current(200)
             else:
                 self.mm.set_current(0)
             
