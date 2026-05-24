@@ -11,7 +11,7 @@ class RWDriver:
         self.motor: VESCObject | None = None
         self.connected = False
         self._last_rpm = 0
-        self.max_delta_rpm = 10
+        self.max_delta_rpm = 30
 
     def connect(self) -> bool:
         try:
