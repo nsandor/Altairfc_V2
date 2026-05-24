@@ -139,7 +139,7 @@ class PointingTask(BaseTask):
             logger.info("PointingTask: HOLD MODE")
             control_signal = self.rw_controller.output(yaw) / 4 + rw_rpm #HOLD
         else:
-            control_signal = self.rw_controller.output(yaw) - rw_rpm * 0.2
+            control_signal = self.rw_controller.output(yaw) - rw_rpm * 0.1
         self.rw.set_rpm(int(control_signal))
 
         if self.mm is not None and abs(yaw) > 0.1:
