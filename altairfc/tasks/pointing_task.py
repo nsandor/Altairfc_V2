@@ -128,8 +128,8 @@ class PointingTask(BaseTask):
             return
         elif abs(yaw) > 0.5:
             self.rw_controller.set_mode("slewing")
-            err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
-            delta_rpm = self.rw_controller.output(-err)
+            err = (-np.sign(yaw)*self._max_slew_rate) - yaw_rate
+            delta_rpm = self.rw_controller.output(err)
         else:
             self.rw_controller.set_mode("pointing")
             delta_rpm = self.rw_controller.output(yaw, yaw_rate)
@@ -202,7 +202,7 @@ class PointingTask(BaseTask):
             self._count = 0
         
         self.err = target
-        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
+        delta_rpm = self.rw_controller.output(self.err, -yaw_rate)
 
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
     
