@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import logging
 import time
+from collections import deque
 from enum import Enum
+import numpy as np
 
 from config.settings import ControllerConfig, GroundStationConfig, PointingConfig, SerialPortConfig
-from controls.controller import Controller
+from controls.controller import GainScheduledController
 from controls.error_computation import compute_error
 from core.datastore import DataStore
 from core.task_base import BaseTask
-from drivers.mm_driver import MMDriver
 from drivers.rw_driver import RWDriver
 
 logger = logging.getLogger(__name__)
@@ -28,28 +29,22 @@ class PointingTask(BaseTask):
         period_s: float,
         datastore: DataStore,
         rw_port: SerialPortConfig | None,
-        mm_port: SerialPortConfig | None,
         rw_controller_config: ControllerConfig,
-        mm_controller_config: ControllerConfig,
         ground_station: GroundStationConfig,
         pointing_config: PointingConfig,
     ) -> None:
         super().__init__(name=name, period_s=period_s, datastore=datastore)
-        self._mm_enabled = pointing_config.mm_enabled
         self._spinup_rpm = pointing_config.spinup_rpm
         self._spinup_s = pointing_config.spinup_s
         self._stabilize_yaw_rate = pointing_config.stabilize_yaw_rate
+        self._max_slew_rate = pointing_config.max_slew_rate
         self._stability_threshold = pointing_config.stability_threshold
-        self._brake_current = pointing_config.brake_current
-        self._mm_pulse_length = pointing_config.mm_pulse_length
-        self._mm_control_period = pointing_config.mm_control_period
         self._saturation_rpm = pointing_config.saturation_rpm
         self._saturation_s = pointing_config.saturation_s
+        self._switch_threshold = pointing_config.switch_threshold
         self.period = period_s
         self.rw = RWDriver(rw_port.port) 
-        self.mm = MMDriver(mm_port.port) if self._mm_enabled else None
-        self.rw_controller = Controller(rw_controller_config, period_s)
-        self.mm_controller = Controller(mm_controller_config, self._mm_control_period)
+        self.rw_controller = GainScheduledController(rw_controller_config, period_s)
         self._default_gs_pos = [ground_station.latitude, ground_station.longitude, ground_station.altitude]
         
 
@@ -57,22 +52,17 @@ class PointingTask(BaseTask):
         self.passed = False
         self._state = PointingState.IDLE
         self._state_started = time.monotonic()
-        self._stable_since = None
-        self._last_mm_command = 0.0
-        self._mm_pulse_until = 0.0
         self._saturated_since = None
+        self._rate_sum_window = deque(maxlen=max(1, int(5.0 / self.period)))
+        self._last_rate_sum = None
+        self.err = 0.0
+        self._allow_switch = 1
 
         if self.rw is not None:
             if not self.rw.connect():
                 self.datastore.write("system.rw_vesc_connected", 0.0)
                 raise ConnectionError("RW ESC enabled but not connected")
             self.datastore.write("system.rw_vesc_connected", 1.0)
-
-        if self.mm is not None:
-            if not self.mm.connect():
-                self.datastore.write("system.mm_vesc_connected", 0.0)
-                raise ConnectionError("MM ESC enabled but not connected")
-            self.datastore.write("system.mm_vesc_connected", 1.0)
 
     def execute(self) -> None:
         self._store()
@@ -83,35 +73,32 @@ class PointingTask(BaseTask):
                 self.passed = True
                 if self._spinup_rpm != 0.0:
                     self._set_state(PointingState.SPINUP)
-                elif self.mm is not None:
-                    self._set_state(PointingState.STABILIZE)
                 else:
-                    self._set_state(PointingState.POINTING)
-        
-        if self._state == PointingState.IDLE and self.mm is not None:
-            self.mm.set_brake_current(self._brake_current)
+                    self._set_state(PointingState.STABILIZE)
         
         if self._state == PointingState.SPINUP:
             self._check()
             self.rw.set_rpm(self._spinup_rpm)
             if time.monotonic() - self._state_started >= self._spinup_s:
-                if self.mm is not None:
-                    self._set_state(PointingState.STABILIZE)
-                else:
-                    self._set_state(PointingState.POINTING)
+                self._set_state(PointingState.STABILIZE)
 
-        if self._state == PointingState.STABILIZE and self.mm is not None:
+        if self._state == PointingState.STABILIZE:
             self._check()
-            _, _, _, yaw_rate, _, _ = self._read()
-            # self.rw.set_rpm(self._spinup_rpm)
-            self.mm.set_brake_current(self._brake_current)
-            if abs(yaw_rate) < self._stabilize_yaw_rate:
-                if self._stable_since is None:
-                    self._stable_since = time.monotonic()
-                elif time.monotonic() - self._stable_since >= self._stability_threshold:
-                    self._set_state(PointingState.POINTING)
+            self.rw_controller.set_mode("stabilize")
+            _, _, _, yaw_rate, _, rw_rpm = self._read()
+            acceleration = self._acceleration(yaw_rate)
+            if abs(yaw_rate) < self._stabilize_yaw_rate and abs(rw_rpm) < self._saturation_rpm:
+                self._set_state(PointingState.POINTING)
+            if self._is_saturated(rw_rpm):
+                if np.sign(rw_rpm) != np.sign(acceleration) or time.monotonic() - self._saturated_since <= 10.0:
+                    delta_rpm = self.rw_controller.output(-yaw_rate)
+                else:
+                    delta_rpm = 0.0
             else:
-                self._stable_since = None
+                delta_rpm = self.rw_controller.output(-yaw_rate)
+            
+            self.rw.set_rpm(int(rw_rpm + delta_rpm))
+
         
         elif self._state == PointingState.POINTING:
             self._check()
@@ -123,39 +110,27 @@ class PointingTask(BaseTask):
 
     def teardown(self) -> None:
         self.rw.close()
-        if self.mm is not None:
-            self.mm.close()
     
     def _point(self) -> None:
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
         if self._is_saturated(rw_rpm):
+            self._set_state(PointingState.SATURATED)
             return
-        if abs(yaw_rate) > self._stabilize_yaw_rate:
-            logger.info("PointingTask: DETUMBLING MODE")
-            control_signal = self.rw_controller.output(0.0, yaw_rate) #DETUMBLE
-        elif abs(yaw_rate) < self._stabilize_yaw_rate and abs(yaw) < 0.1:
-            logger.info("PointingTask: HOLD MODE")
-            control_signal = self.rw_controller.output(yaw, yaw_rate) / 4  + 0.95 * rw_rpm #HOLD
+        elif abs(yaw_rate) > self._stabilize_yaw_rate:
+            self._set_state(PointingState.STABILIZE)
+            return
+        elif abs(yaw) > 0.2:
+            self.rw_controller.set_mode("slewing")
+            err = np.sign(yaw)*(self._max_slew_rate - yaw_rate)
+            delta_rpm = self.rw_controller.output(err)
         else:
-            control_signal = self.rw_controller.output(yaw, yaw_rate)
-        self.rw.set_rpm(int(control_signal))
+            self.rw_controller.set_mode("pointing")
+            delta_rpm = self.rw_controller.output(yaw, yaw_rate)
+        self.rw.set_rpm(rw_rpm + delta_rpm)
 
-        if self.mm is not None and abs(yaw) > 0.1:
-            rpm_err = rw_rpm - self._spinup_rpm
-            mm_cmd = self.mm_controller.output(rpm_err)
-            self.datastore.write("pointing.mm_control_signal", mm_cmd)
-            now = time.monotonic()
 
-            if now - self._last_mm_command >= self._mm_control_period:
-                self._mm_pulse_until = now + self._mm_pulse_length
-                self._last_mm_command = now
-
-            if now < self._mm_pulse_until:
-                self.mm.set_current(mm_cmd)
-            else:
-                self.mm.set_current(0)
             
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
@@ -173,16 +148,44 @@ class PointingTask(BaseTask):
         elapsed = now - self._saturated_since
         if elapsed >= self._saturation_s:
             logger.warning("PointingTask: RW saturated")
-            self._set_state(PointingState.SATURATED)
             return True
         return False
     
     def _desaturate(self) -> None:
-        self.rw.set_rpm(0)
-        _, _, _, yaw_rate, yaw, _ = self._read()
-        if abs(yaw) <= 0.5 and abs(yaw_rate) <= self._stabilize_yaw_rate:
-            logger.info("PointingTask: desaturation successful, resuming pointing")
-            self._set_state(PointingState.POINTING)
+        self.rw_controller.set_mode("saturated")
+        _, _, _, yaw_rate, yaw, rw_rpm = self._read()
+        saturation = self._is_saturated(rw_rpm)
+
+        if time.monotonic() - self._state_started >= 180.0:
+            self._allow_switch = 1
+
+        if abs(yaw) > self._switch_threshold and np.sign(yaw_rate) != np.sign(yaw) and self._allow_switch == 1:
+            self.err = yaw + np.sign(yaw_rate) * 2*np.pi
+            self._allow_switch = 0
+        elif not saturation and abs(yaw) < self._switch_threshold:
+            self._allow_switch = 1
+            self.err = yaw
+            self._set_state(PointingState.STABILIZE)
+        elif self._allow_switch == 1:
+            self.err = yaw
+        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
+        self.rw.set_rpm(rw_rpm + delta_rpm)
+
+    def _acceleration(self, yaw_rate: float) -> float:
+        self._rate_sum_window.append(yaw_rate)
+
+        if len(self._rate_sum_window) < self._rate_sum_window.maxlen:
+            return 0.0
+
+        rate_sum = float(sum(self._rate_sum_window))
+
+        if self._last_rate_sum is None:
+            self._last_rate_sum = rate_sum
+            return 0.0
+
+        trend = rate_sum - self._last_rate_sum
+        self._last_rate_sum = rate_sum
+        return trend
 
     
     def _store(self) -> None:
@@ -193,13 +196,6 @@ class PointingTask(BaseTask):
                 self._write("rw", data)
             elif self.rw.connected == False:
                 raise ConnectionError("RW VESC disconnected during pointing task")
-        if self.mm is not None:
-            data = self.mm.read()
-            self.datastore.write("system.mm_vesc_connected", 1.0 if self.mm.connected else 0.0)
-            if data is not None:
-                self._write("mm", data)
-            elif self.mm.connected == False:
-                raise ConnectionError("MM VESC disconnected during pointing task")
 
     def _write(self, prefix: str, data) -> None:
             for f in ('rpm', 'duty_now', 'current_motor', 'current_in',
@@ -254,3 +250,5 @@ class PointingTask(BaseTask):
             self._state_started = time.monotonic()
             self._stable_since = None
             self._saturated_since = None
+            self._rate_sum_window.clear()
+            self._last_rate_sum = None

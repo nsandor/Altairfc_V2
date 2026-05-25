@@ -107,8 +107,6 @@ def main() -> None:
     # FlightStageTask, RWTask, and MMTask read these keys each cycle so that
     # an UpdateSettingCommand from the GS takes effect without a restart.
     _fs = config.flight_stage
-    _rw = config.controller["reaction_wheel"]
-    _mm = config.controller["momentum_management"]
     for _key, _val in {
         "settings.termination_altitude_m":       _fs.termination_altitude_m,
         "settings.burst_altitude_m":             _fs.burst_altitude_m,
@@ -122,12 +120,6 @@ def main() -> None:
         "settings.termination_confirm_window_s": _fs.termination_confirm_window_s,
         "settings.pointing_activate_altitude_m": _fs.pointing_activate_altitude_m,
         "settings.pointing_duration_min":        _fs.pointing_duration_min,
-        "settings.rw_kp":          _rw.Kp,
-        "settings.rw_kd":          _rw.Kd,
-        "settings.rw_max_rpm":     _rw.max,
-        "settings.mm_kp":          _mm.Kp,
-        "settings.mm_kd":          _mm.Kd,
-        "settings.mm_max_current": _mm.max,
     }.items():
         datastore.write(_key, float(_val))
     datastore.write("settings.gs_use_hardcoded", 1.0 if config.ground_station.use_hardcoded else 0.0)
@@ -175,9 +167,7 @@ def main() -> None:
             period_s    = config.tasks["pointing"].period_s,
             datastore   = datastore,
             rw_port = config.rw_esc,
-            mm_port = config.mm_esc,
             rw_controller_config    = config.controller["reaction_wheel"],
-            mm_controller_config    = config.controller["momentum_management"],
             ground_station  = config.ground_station,
             pointing_config = config.pointing,
         )

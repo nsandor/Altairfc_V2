@@ -38,6 +38,21 @@ class ControllerConfig:
     max: float = 0.0
     min: float = 0.0
 
+ControllerConfigMap = dict[str, ControllerConfig | dict[str, ControllerConfig]]
+
+
+def _build_controller_config(cfg: dict[str, Any]) -> ControllerConfig:
+    max_val = cfg.get("max_rpm", cfg.get("max_current"))
+    min_val = cfg.get("min_rpm", cfg.get("min_current"))
+    return ControllerConfig(
+        Kp=cfg["Kp"],
+        Ki=cfg["Ki"],
+        Kd=cfg["Kd"],
+        max=max_val,
+        min=min_val,
+    )
+
+
 @dataclass
 class SerialPortConfig:
     port: str
@@ -70,16 +85,15 @@ class FlightStageConfig:
 
 @dataclass
 class PointingConfig:
-    mm_enabled: bool = False
     spinup_rpm: int = 2150
     spinup_s: float = 5.0
     stabilize_yaw_rate: float = 0.1
+    max_slew_rate: float = 0.4
     stability_threshold: float = 5.0
     brake_current: int = 2000
-    mm_pulse_length: float = 0.15
-    mm_control_period: float = 5.0
     saturation_rpm: float = 3500.0
     saturation_s: float = 5.0
+    switch_threshold: float = 0.26
 
 @dataclass
 class RadioConfig:
@@ -107,8 +121,7 @@ class SystemConfig:
     mavlink: SerialPortConfig
     telemetry: SerialPortConfig | None
     rw_esc: SerialPortConfig
-    mm_esc: SerialPortConfig
-    controller: dict[str, ControllerConfig]
+    controller: ControllerConfigMap
     tasks: dict[str, TaskConfig]
     flight_stage: FlightStageConfig = field(default_factory=FlightStageConfig)
     pointing: PointingConfig = field(default_factory=PointingConfig)
@@ -128,15 +141,15 @@ class SystemConfig:
         mavlink = SerialPortConfig(**data["mavlink"])
         telemetry = _resolve_serial_port(data["telemetry"])
         rw_esc = SerialPortConfig(**data["rw_esc"])
-        mm_esc = SerialPortConfig(**data["mm_esc"])
-        controller = {}
+        controller: ControllerConfigMap = {}
         for name, cfg in data.get("controller", {}).items():
-            max_val = cfg.get("max_rpm", cfg.get("max_current"))
-            min_val = cfg.get("min_rpm", cfg.get("min_current"))
-            controller[name] = ControllerConfig(
-                Kp=cfg["Kp"], Ki=cfg["Ki"], Kd=cfg["Kd"],
-                max=max_val, min=min_val,
-            )
+            if "Kp" in cfg:
+                controller[name] = _build_controller_config(cfg)
+            else:
+                controller[name] = {
+                    mode: _build_controller_config(mode_cfg)
+                    for mode, mode_cfg in cfg.items()
+                }
 
         tasks: dict[str, TaskConfig] = {}
         for name, cfg in data.get("tasks", {}).items():
@@ -165,16 +178,15 @@ class SystemConfig:
 
         pointing_raw =  data.get("pointing", {})
         pointing = PointingConfig(
-            mm_enabled=pointing_raw.get("mm_enabled"),
-            spinup_rpm=pointing_raw.get("spinup_rpm"),
-            spinup_s=pointing_raw.get("spinup_s"),
+            spinup_rpm=pointing_raw.get("spinup_rpm", 0.0),
+            spinup_s=pointing_raw.get("spinup_s", 0.0),
             stabilize_yaw_rate=pointing_raw.get("stabilize_yaw_rate"),
+            max_slew_rate=pointing_raw.get("max_slew_rate"),
             stability_threshold=pointing_raw.get("stability_threshold"),
             brake_current=pointing_raw.get("brake_current"),
-            mm_pulse_length=pointing_raw.get("mm_pulse_length"),
-            mm_control_period=pointing_raw.get("mm_control_period"),
             saturation_rpm=pointing_raw.get("saturation_rpm", 3500.0),
             saturation_s=pointing_raw.get("saturation_s", 5.0),
+            switch_threshold=pointing_raw.get("switch_threshold", 0.26),
         )
 
         gs_raw = data.get("ground_station", {})
@@ -206,7 +218,6 @@ class SystemConfig:
             mavlink=mavlink,
             telemetry=telemetry,
             rw_esc=rw_esc,
-            mm_esc=mm_esc,
             controller=controller,
             tasks=tasks,
             flight_stage=flight_stage,

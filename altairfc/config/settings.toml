@@ -69,16 +69,14 @@ pointing_activate_altitude_m  = -200.0   # GPS MSL altitude (m) above which moto
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
 
 [pointing]
-mm_enabled = false
 spinup_rpm = 0.0
 spinup_s = 0.0
 stabilize_yaw_rate = 1.5
+max_slew_rate = 0.4
 stability_threshold = 5.0
-brake_current = 2000
-mm_pulse_length = 0.15
-mm_control_period = 5.0
 saturation_rpm = 1300.0
 saturation_s = 5.0
+switch_threshold = 0.26
 
 [system]
 log_level = "INFO"
@@ -114,17 +112,33 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 # Effective rate = TX_RATE_HZ * scale. Keeps the TX queue from overflowing at lower data rates.
 rate_scale = [0.1, 0.33, 1.0]
 
-[controller.reaction_wheel]
-Kp = 7000.0
-Kd = 600.0
+[controller.reaction_wheel.pointing]
+Kp = 8000.0
+Kd = 960.0
 Ki = 0.0
-max_rpm = 3000.0
-min_rpm = -3000.0
+max_rpm = 4300.0
+min_rpm = -4300.0
+
+[controller.reaction_wheel.stabilize]
+Kp = 4000.0
+Kd = 700.0
+Ki = 0.0
+max_rpm = 2500.0
+min_rpm = -2500.0
+
+[controller.reaction_wheel.slewing]
+Kp = 10000.0
+Kd = 1200.0
+Ki = 0.0
+max_rpm = 4300.0
+min_rpm = -4300.0
+
+[controller.reaction_wheel.saturated]
+Kp = 2000.0
+Kd = 500.0
+Ki = 0.0
+max_rpm = 1500.0
+min_rpm = -1500.0
 
 
-[controller.momentum_management]
-Kp = 0.00003488372
-Kd = 0.0
-Ki = 0.0
-max_current = 0.15
-min_current = 0.0
+
