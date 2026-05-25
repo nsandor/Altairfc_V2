@@ -77,7 +77,7 @@ class BluetoothTransport:
         delay = 1.0
         while self._running:
             try:
-                self._serial = serial.Serial(self.port, self.baud, timeout=0.05)
+                self._serial = serial.Serial(self.port, self.baud, timeout=1.0)
                 logger.info("BluetoothTransport: connected on %s", self.port)
                 return
             except serial.SerialException as e:
