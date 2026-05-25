@@ -87,10 +87,12 @@ class BluetoothTransport:
                 delay = min(delay * 2, _RECONNECT_DELAY_MAX)
 
     def _reader_loop(self) -> None:
+        logger.debug("BluetoothTransport: reader thread started")
         while self._running:
             if self._serial is None or not self._serial.is_open:
                 self._connect()
                 continue
+            logger.debug("BluetoothTransport: waiting for data on %s", self.port)
             try:
                 data = self._serial.read(256)
             except serial.SerialException as e:
@@ -98,6 +100,7 @@ class BluetoothTransport:
                 # RFCOMM raises this transiently when the remote hasn't sent data yet;
                 # it does not mean the connection is gone.
                 if "returned no data" in msg:
+                    logger.debug("BluetoothTransport: empty read (RFCOMM idle)")
                     continue
                 logger.warning("BluetoothTransport: read error (%s) — reconnecting", e)
                 try:
@@ -106,6 +109,7 @@ class BluetoothTransport:
                     pass
                 self._connect()
                 continue
+            logger.debug("BluetoothTransport: read() returned %d bytes", len(data))
             if data:
                 logger.debug("BluetoothTransport: RX %d bytes: %s", len(data), data.hex())
                 with self._buf_lock:

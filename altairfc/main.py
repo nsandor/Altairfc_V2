@@ -23,7 +23,18 @@ from pathlib import Path
 # Bootstrap logging before importing project modules so their loggers work
 # ---------------------------------------------------------------------------
 from core.log_format import setup_logging
-setup_logging("WARNING")
+setup_logging("DEBUG")
+
+class _BtOnlyFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        return (
+            record.name == "telemetry.bluetooth_transport"
+            or record.levelno >= logging.WARNING
+        )
+
+for _h in logging.getLogger().handlers:
+    _h.addFilter(_BtOnlyFilter())
+
 logging.getLogger("telemetry.bluetooth_transport").setLevel(logging.DEBUG)
 logger = logging.getLogger("main")
 
