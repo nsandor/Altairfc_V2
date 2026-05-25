@@ -94,6 +94,11 @@ class BluetoothTransport:
             try:
                 data = self._serial.read(256)
             except serial.SerialException as e:
+                msg = str(e)
+                # RFCOMM raises this transiently when the remote hasn't sent data yet;
+                # it does not mean the connection is gone.
+                if "returned no data" in msg:
+                    continue
                 logger.warning("BluetoothTransport: read error (%s) — reconnecting", e)
                 try:
                     self._serial.close()
