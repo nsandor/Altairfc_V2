@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """
-DRV8212P H-bridge driver test script.
+DRV8212P H-bridge interactive test.
 
-Tests both drivers through all four states: forward, reverse, brake, coast.
 Assumes the MCP23017 is at its default I2C address (0x24) on bus 1.
 
 Wiring:
@@ -16,7 +15,6 @@ Usage:
 """
 
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -24,54 +22,32 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from drivers.mcp23017 import MCP23017
 from drivers.drv8212p import DRV8212P
 
-HOLD_S = 1.5   # seconds to hold each state before moving on
-PAUSE_S = 0.5  # pause between tests
+COMMANDS = {
+    "1f": (0, "forward"),
+    "1r": (0, "reverse"),
+    "1b": (0, "brake"),
+    "1c": (0, "coast"),
+    "2f": (1, "forward"),
+    "2r": (1, "reverse"),
+    "2b": (1, "brake"),
+    "2c": (1, "coast"),
+    "ca": (None, "coast_all"),
+}
 
-
-def run_state(motors: DRV8212P, driver: int, state: str) -> None:
-    print(f"  Driver {driver}: {state:<8}", end="  ", flush=True)
-    getattr(motors, state)(driver)
-    time.sleep(HOLD_S)
-    motors.coast(driver)
-    print("ok")
-
-
-def test_all_states(motors: DRV8212P, driver: int) -> None:
-    print(f"--- Driver {driver} ---")
-    for state in ("forward", "reverse", "brake", "coast"):
-        run_state(motors, driver, state)
-    time.sleep(PAUSE_S)
-
-
-def test_simultaneous(motors: DRV8212P) -> None:
-    print("--- Both drivers forward simultaneously ---")
-    motors.forward(0)
-    motors.forward(1)
-    time.sleep(HOLD_S)
-    motors.coast_all()
-    print("  ok")
-    time.sleep(PAUSE_S)
-
-    print("--- Both drivers reverse simultaneously ---")
-    motors.reverse(0)
-    motors.reverse(1)
-    time.sleep(HOLD_S)
-    motors.coast_all()
-    print("  ok")
-    time.sleep(PAUSE_S)
-
-    print("--- Opposing directions (driver 0 forward, driver 1 reverse) ---")
-    motors.forward(0)
-    motors.reverse(1)
-    time.sleep(HOLD_S)
-    motors.coast_all()
-    print("  ok")
-    time.sleep(PAUSE_S)
+HELP = """\
+Commands:
+  1f / 2f   driver 1/2 forward
+  1r / 2r   driver 1/2 reverse
+  1b / 2b   driver 1/2 brake
+  1c / 2c   driver 1/2 coast
+  ca        coast all
+  q         quit
+"""
 
 
 def main() -> None:
     print("=" * 45)
-    print(" DRV8212P motor driver test")
+    print(" DRV8212P interactive test")
     print("=" * 45)
     print()
 
@@ -82,15 +58,35 @@ def main() -> None:
         sys.exit(1)
 
     motors = DRV8212P(io)
-    print("[OK] MCP23017 and DRV8212P initialised\n")
+    print("[OK] MCP23017 and DRV8212P initialised")
+    print()
+    print(HELP)
 
     try:
-        test_all_states(motors, 0)
-        test_all_states(motors, 1)
-        test_simultaneous(motors)
-        print("\nAll tests passed.")
+        while True:
+            try:
+                cmd = input(">> ").strip().lower()
+            except EOFError:
+                break
+
+            if cmd in ("q", "quit", "exit"):
+                break
+            elif cmd in ("h", "help", "?"):
+                print(HELP)
+            elif cmd in COMMANDS:
+                driver, action = COMMANDS[cmd]
+                if action == "coast_all":
+                    motors.coast_all()
+                    print("Both coasted")
+                else:
+                    getattr(motors, action)(driver)
+                    print(f"Driver {driver + 1}: {action}")
+            elif cmd == "":
+                continue
+            else:
+                print(f"Unknown command: '{cmd}'. Type 'h' for help.")
     except KeyboardInterrupt:
-        print("\n[INTERRUPTED] Ctrl+C detected.")
+        print()
     finally:
         motors.coast_all()
         io.close()
