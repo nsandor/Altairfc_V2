@@ -134,7 +134,6 @@ class PointingTask(BaseTask):
             delta_rpm = self.rw_controller.output(yaw, yaw_rate)
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
 
-
             
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
@@ -206,7 +205,8 @@ class PointingTask(BaseTask):
         delta_rpm = self.rw_controller.output(self.err, -yaw_rate)
 
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
-
+    
+    def _acceleration(self, yaw_rate: float) -> float:
         self._rate_sum_window.append(yaw_rate)
 
         if len(self._rate_sum_window) < self._rate_sum_window.maxlen:
