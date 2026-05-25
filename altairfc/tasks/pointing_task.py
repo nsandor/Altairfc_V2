@@ -154,7 +154,7 @@ class PointingTask(BaseTask):
         return False
     
     def _desaturate(self) -> None:
-        self.rw_controller.set_mode("slewing")
+        self.rw_controller.set_mode("pointing")
         _, _, _, yaw_rate, yaw, rw_rpm = self._read()
         saturation = self._is_saturated(rw_rpm)
 
