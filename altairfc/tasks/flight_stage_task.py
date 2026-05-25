@@ -77,6 +77,7 @@ _VESC_RPM_TIMEOUT_S   = 5.0   # VESC data must have arrived within this many sec
 # Arm checks
 
 _NEUTRAL_YAW_RATE = 0.15  # rad/s — max yaw rate to consider orientation stable
+_GPS_MIN_SV = 6            # minimum satellites in view for a valid GPS fix
 
 # Altitude tolerance for "stationary" check (m)
 _STATIONARY_BAND_M = 2.0
@@ -170,6 +171,7 @@ class FlightStageTask(BaseTask):
         }
 
         self._arm_cmd_pending: bool = False
+        self._preflight_ok_since: float | None = None  # monotonic time when preflight first passed
 
         self._pointing_start_time = None
 
@@ -284,6 +286,26 @@ class FlightStageTask(BaseTask):
             preflight_ok = self._check_preflight(now)
             self._write_flag("preflight_ok", 1 if preflight_ok else 0)
 
+            # Track how long preflight has been continuously passing (for debounce)
+            if preflight_ok:
+                if self._preflight_ok_since is None:
+                    self._preflight_ok_since = now
+            else:
+                self._preflight_ok_since = None
+
+            # Auto-advance: trigger arm checks once preflight has been stable for debounce period
+            if (
+                cfg.auto_advance
+                and not self._arm_cmd_pending
+                and self._preflight_ok_since is not None
+                and (now - self._preflight_ok_since) >= cfg.preflight_debounce_s
+            ):
+                logger.info(
+                    "FlightStageTask: preflight stable for %.1f s — auto-triggering arm checks",
+                    cfg.preflight_debounce_s,
+                )
+                self._arm_cmd_pending = True
+
             if self._arm_cmd_pending:
                 arm_ok, arm_failures = self._check_arm(now)
                 if arm_ok:
@@ -300,6 +322,7 @@ class FlightStageTask(BaseTask):
             self._write_flag("arm_state", 1)
             if self._detect_launch(now, baro_alt):
                 self._write_flag("launch_initiated", 1)
+                self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH
 
         elif stage == STAGE_LAUNCH:
@@ -424,11 +447,11 @@ class FlightStageTask(BaseTask):
         """
         failures: list[str] = []
 
-        # GPS fix quality — temporarily disabled for ground testing
-        # gps_valid  = int(self.datastore.read("gps.valid",  default=0))
-        # gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
-        # if not gps_valid or gps_num_sv < _GPS_MIN_SV:
-        #     failures.append(f"gps_no_fix(sv={gps_num_sv})")
+        # GPS fix quality
+        gps_valid  = int(self.datastore.read("gps.valid",  default=0))
+        gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
+        if not gps_valid or gps_num_sv < _GPS_MIN_SV:
+            failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
         # Neutral orientation — low yaw rate
         yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))

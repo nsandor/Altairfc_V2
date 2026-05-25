@@ -71,6 +71,8 @@ termination_confirm_drop_m    = 100.0     # altitude drop required to confirm cu
 termination_confirm_window_s  = 30.0      # time window for termination confirmation (s)
 pointing_activate_altitude_m  = 10000   # GPS MSL altitude (m) above which motors activate
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
+auto_advance                  = true      # automatically advance PREFLIGHT→ARMED without ARM command
+preflight_debounce_s          = 5.0       # seconds preflight checks must pass continuously before auto-arming
 
 [system]
 log_level = "INFO"
