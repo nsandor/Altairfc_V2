@@ -155,7 +155,7 @@ class PointingTask(BaseTask):
         return False
     
     def _desaturate(self) -> None:
-        self.rw_controller.set_mode("pointing")
+        self.rw_controller.set_mode("saturation")
         _, _, _, yaw_rate, yaw, rw_rpm = self._read()
         saturation = self._is_saturated(rw_rpm)
 
@@ -202,7 +202,7 @@ class PointingTask(BaseTask):
             self._count = 0
         
         self.err = target
-        delta_rpm = self.rw_controller.output(self.err, -yaw_rate)
+        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
 
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
     
