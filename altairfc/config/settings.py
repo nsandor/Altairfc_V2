@@ -94,7 +94,7 @@ class PointingConfig:
     saturation_rpm: float = 3500.0
     saturation_s: float = 5.0
     switch_threshold: float = 0.26
-
+    yaw_rate_deadband: float = 0.05
 @dataclass
 class RadioConfig:
     data_rate:      int   = 1     # 0=Low, 1=Mid, 2=High
@@ -187,6 +187,7 @@ class SystemConfig:
             saturation_rpm=pointing_raw.get("saturation_rpm", 3500.0),
             saturation_s=pointing_raw.get("saturation_s", 5.0),
             switch_threshold=pointing_raw.get("switch_threshold", 0.26),
+            yaw_rate_deadband=pointing_raw.get("yaw_rate_deadband", 0.05),
         )
 
         gs_raw = data.get("ground_station", {})

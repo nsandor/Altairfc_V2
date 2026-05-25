@@ -42,6 +42,7 @@ class PointingTask(BaseTask):
         self._saturation_rpm = pointing_config.saturation_rpm
         self._saturation_s = pointing_config.saturation_s
         self._switch_threshold = pointing_config.switch_threshold
+        self._yaw_rate_deadband = pointing_config.yaw_rate_deadband
         self.period = period_s
         self.rw = RWDriver(rw_port.port) 
         self.rw_controller = GainScheduledController(rw_controller_config, period_s)
@@ -57,6 +58,9 @@ class PointingTask(BaseTask):
         self._last_rate_sum = None
         self.err = 0.0
         self._allow_switch = 1
+        self._target_offset = 0.0
+        self._count = 0
+        self._hold_count = 0
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -123,12 +127,12 @@ class PointingTask(BaseTask):
             return
         elif abs(yaw) > 0.2:
             self.rw_controller.set_mode("slewing")
-            err = np.sign(yaw)*(self._max_slew_rate - yaw_rate)
+            err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
             delta_rpm = self.rw_controller.output(err)
         else:
             self.rw_controller.set_mode("pointing")
             delta_rpm = self.rw_controller.output(yaw, yaw_rate)
-        self.rw.set_rpm(rw_rpm + delta_rpm)
+        self.rw.set_rpm(int(rw_rpm + delta_rpm))
 
 
             
@@ -152,26 +156,57 @@ class PointingTask(BaseTask):
         return False
     
     def _desaturate(self) -> None:
-        self.rw_controller.set_mode("saturated")
+        self.rw_controller.set_mode("slewing")
         _, _, _, yaw_rate, yaw, rw_rpm = self._read()
         saturation = self._is_saturated(rw_rpm)
 
-        if time.monotonic() - self._state_started >= 180.0:
-            self._allow_switch = 1
+        target = yaw + self._target_offset
 
-        if abs(yaw) > self._switch_threshold and np.sign(yaw_rate) != np.sign(yaw) and self._allow_switch == 1:
-            self.err = yaw + np.sign(yaw_rate) * 2*np.pi
+        moving_away = (
+            abs(yaw) > self._switch_threshold
+            and np.sign(yaw_rate) != np.sign(yaw)
+            and abs(yaw_rate) > self._yaw_rate_deadband
+        )
+
+        if saturation and moving_away and self._allow_switch == 1:
+            self._target_offset += np.sign(yaw_rate) * 2*np.pi
             self._allow_switch = 0
-        elif not saturation and abs(yaw) < self._switch_threshold:
-            self._allow_switch = 1
-            self.err = yaw
-            self._set_state(PointingState.STABILIZE)
-        elif self._allow_switch == 1:
-            self.err = yaw
-        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
-        self.rw.set_rpm(rw_rpm + delta_rpm)
+            self._count = 0
+            self._hold_count = 0
 
-    def _acceleration(self, yaw_rate: float) -> float:
+        target = yaw + self._target_offset
+
+        moving_toward = (
+            np.sign(yaw_rate) == np.sign(yaw)
+            and abs(yaw_rate) > self._yaw_rate_deadband
+        )
+
+        if np.deg2rad(30) < abs(yaw) < np.deg2rad(170) and moving_toward:
+            self._allow_switch = 0
+            self._count += 1
+
+        if self._allow_switch == 0:
+            self._count += 1
+
+        if not saturation and abs(yaw) < self._switch_threshold and abs(yaw_rate) < self._stabilize_yaw_rate:
+            self._hold_count += 1
+            if self._hold_count >= 80:
+                self._allow_switch = 1
+                self._target_offset = 0.0
+                self._set_state(PointingState.STABILIZE)
+        else:
+            self._hold_count = 0
+
+
+        if self._count >= 3600:
+            self._allow_switch = 1
+            self._count = 0
+        
+        self.err = target
+        delta_rpm = self.rw_controller.output(self.err, -yaw_rate)
+
+        self.rw.set_rpm(int(rw_rpm + delta_rpm))
+
         self._rate_sum_window.append(yaw_rate)
 
         if len(self._rate_sum_window) < self._rate_sum_window.maxlen:
