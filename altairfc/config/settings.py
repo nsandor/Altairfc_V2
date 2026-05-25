@@ -64,8 +64,10 @@ class FlightStageConfig:
     recovery_stationary_s:        float = 10.0
     termination_confirm_drop_m:   float = 100.0
     termination_confirm_window_s: float = 30.0
-    pointing_activate_altitude_m: float = 18000.0   
-    pointing_duration_min:        float = 120.0 
+    pointing_activate_altitude_m: float = 18000.0
+    pointing_duration_min:        float = 120.0
+    auto_advance:                 bool  = True
+    preflight_debounce_s:         float = 5.0
 
 
 
@@ -149,6 +151,8 @@ class SystemConfig:
             termination_confirm_window_s=fs_raw.get("termination_confirm_window_s"),
             pointing_activate_altitude_m=fs_raw.get("pointing_activate_altitude_m"),
             pointing_duration_min=fs_raw.get("pointing_duration_min"),
+            auto_advance=fs_raw.get("auto_advance", True),
+            preflight_debounce_s=fs_raw.get("preflight_debounce_s", 5.0),
         )
 
         gs_raw = data.get("ground_station", {})
