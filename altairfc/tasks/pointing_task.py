@@ -95,11 +95,11 @@ class PointingTask(BaseTask):
                 self._set_state(PointingState.POINTING)
             if self._is_saturated(rw_rpm):
                 if np.sign(rw_rpm) != np.sign(acceleration) or time.monotonic() - self._saturated_since <= 10.0:
-                    delta_rpm = self.rw_controller.output(-yaw_rate)
+                    delta_rpm = self.rw_controller.output(yaw_rate)
                 else:
                     delta_rpm = 0.0
             else:
-                delta_rpm = self.rw_controller.output(-yaw_rate)
+                delta_rpm = self.rw_controller.output(yaw_rate)
             
             self.rw.set_rpm(int(rw_rpm + delta_rpm))
 
@@ -125,10 +125,10 @@ class PointingTask(BaseTask):
         elif abs(yaw_rate) > self._stabilize_yaw_rate:
             self._set_state(PointingState.STABILIZE)
             return
-        elif abs(yaw) > 0.2:
+        elif abs(yaw) > 0.35:
             self.rw_controller.set_mode("slewing")
             err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
-            delta_rpm = self.rw_controller.output(err)
+            delta_rpm = self.rw_controller.output(-err)
         else:
             self.rw_controller.set_mode("pointing")
             delta_rpm = self.rw_controller.output(yaw, yaw_rate)
