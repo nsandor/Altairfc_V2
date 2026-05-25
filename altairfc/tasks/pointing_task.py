@@ -166,7 +166,7 @@ class PointingTask(BaseTask):
         )
 
         if saturation and moving_away and self._allow_switch == 1:
-            self._target_offset += np.sign(yaw_rate) * 2*np.pi
+            self._target_offset += -np.sign(rw_rpm) * 2*np.pi
             self._allow_switch = 0
             self._count = 0
             self._hold_count = 0
