@@ -23,7 +23,8 @@ from pathlib import Path
 # Bootstrap logging before importing project modules so their loggers work
 # ---------------------------------------------------------------------------
 from core.log_format import setup_logging
-setup_logging("INFO")
+setup_logging("WARNING")
+logging.getLogger("telemetry.bluetooth_transport").setLevel(logging.DEBUG)
 logger = logging.getLogger("main")
 
 # ---------------------------------------------------------------------------
