@@ -121,15 +121,15 @@ max_rpm = 500.0
 min_rpm = -500.0
 
 [controller.reaction_wheel.stabilize]
-Kp = 0.0
-Kd = 90.0
+Kp = 90.0
+Kd = 0.0
 Ki = 0.0
 max_rpm = 500.0
 min_rpm = -500.0
 
 [controller.reaction_wheel.slewing]
-Kp = 0.0
-Kd = 61.8
+Kp = -61.8
+Kd = 0.0
 Ki = 0.0
 max_rpm = 500.0
 min_rpm = -500.0
