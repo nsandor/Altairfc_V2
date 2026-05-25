@@ -114,7 +114,7 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel.pointing]
-Kp = 88.9
+Kp = 100.9
 Kd = 177.9
 Ki = 0.9
 max_rpm = 3500.0

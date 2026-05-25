@@ -119,13 +119,14 @@ class PointingTask(BaseTask):
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
-        if self._is_saturated(rw_rpm):
+        saturation = self._is_saturated(rw_rpm)
+        if saturation:
             self._set_state(PointingState.SATURATED)
             return
         elif abs(yaw_rate) > self._stabilize_yaw_rate:
             self._set_state(PointingState.STABILIZE)
             return
-        elif abs(yaw) > 0.35:
+        elif abs(yaw) > 0.5:
             self.rw_controller.set_mode("slewing")
             err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
             delta_rpm = self.rw_controller.output(-err)
@@ -162,7 +163,7 @@ class PointingTask(BaseTask):
 
         moving_away = (
             abs(yaw) > self._switch_threshold
-            and np.sign(yaw_rate) != np.sign(yaw)
+            and np.sign(yaw_rate) == np.sign(yaw)
             and abs(yaw_rate) > self._yaw_rate_deadband
         )
 
@@ -175,7 +176,7 @@ class PointingTask(BaseTask):
         target = yaw + self._target_offset
 
         moving_toward = (
-            np.sign(yaw_rate) == np.sign(yaw)
+            np.sign(yaw_rate) != np.sign(yaw)
             and abs(yaw_rate) > self._yaw_rate_deadband
         )
 
