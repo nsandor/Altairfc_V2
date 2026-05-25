@@ -107,5 +107,6 @@ class BluetoothTransport:
                 self._connect()
                 continue
             if data:
+                logger.debug("BluetoothTransport: RX %d bytes: %s", len(data), data.hex())
                 with self._buf_lock:
                     self._buf.extend(data)
