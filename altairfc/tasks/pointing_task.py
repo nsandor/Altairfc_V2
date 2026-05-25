@@ -150,7 +150,6 @@ class PointingTask(BaseTask):
 
         elapsed = now - self._saturated_since
         if elapsed >= self._saturation_s:
-            logger.warning("PointingTask: RW saturated")
             return True
         return False
     
