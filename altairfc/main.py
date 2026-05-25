@@ -73,6 +73,7 @@ from telemetry.transport import SerialTransport
 from tasks.pitch_task import PitchTask
 from tasks.datalogger_task import DataLoggerTask
 from tasks.radio_config_task import RadioConfigTask
+from telemetry.bluetooth_transport import BluetoothTransport
 
 
 def main() -> None:
@@ -189,11 +190,28 @@ def main() -> None:
         )
     )
 
+    # Build transports first so cross-ACK references can be wired before registration.
+    telemetry_transport = None
+    bt_transport = None
+
     if config.telemetry is not None:
         telemetry_transport = SerialTransport(
             port=config.telemetry.port,
             baud=config.telemetry.baud,
         )
+    else:
+        logger.info("Telemetry radio not configured — TelemetryTask, CommandReceiverTask, and RadioConfigTask skipped")
+
+    if config.bluetooth.enabled:
+        bt_transport = BluetoothTransport(
+            port=config.bluetooth.port,
+            baud=config.bluetooth.baud,
+        )
+        logger.info("Bluetooth command receiver enabled on %s", config.bluetooth.port)
+    else:
+        logger.info("Bluetooth disabled — set [bluetooth] enabled = true in settings.toml to enable")
+
+    if telemetry_transport is not None:
         scheduler.register(
             TelemetryTask(
                 name="telemetry",
@@ -209,6 +227,7 @@ def main() -> None:
                 datastore=datastore,
                 transport=telemetry_transport,
                 buzzer=buzzer,
+                extra_ack_transports=[bt_transport] if bt_transport is not None else [],
             )
         )
         scheduler.register(
@@ -220,8 +239,19 @@ def main() -> None:
                 radio_config=config.radio_config,
             )
         )
-    else:
-        logger.info("Telemetry radio not configured — TelemetryTask, CommandReceiverTask, and RadioConfigTask skipped")
+
+    if bt_transport is not None:
+        scheduler.register(
+            CommandReceiverTask(
+                name="bt_command_receiver",
+                period_s=config.tasks["command_receiver"].period_s,
+                datastore=datastore,
+                transport=bt_transport,
+                buzzer=buzzer,
+                owns_transport=True,
+                extra_ack_transports=[telemetry_transport] if telemetry_transport is not None else [],
+            )
+        )
 
     scheduler.register(
         FlightStageTask(

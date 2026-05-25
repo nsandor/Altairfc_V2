@@ -71,6 +71,13 @@ class FlightStageConfig:
 
 
 @dataclass
+class BluetoothConfig:
+    enabled: bool = False
+    port: str     = "/dev/rfcomm0"
+    baud: int     = 115200
+
+
+@dataclass
 class RadioConfig:
     data_rate:      int   = 1     # 0=Low, 1=Mid, 2=High
     tx_power:       int   = 2     # 0=Low, 1=Mid, 2=High
@@ -104,6 +111,7 @@ class SystemConfig:
         default_factory=lambda: GroundStationConfig(latitude=0.0, longitude=0.0, altitude=0.0)
     )
     radio_config: RadioConfig = field(default_factory=RadioConfig)
+    bluetooth: BluetoothConfig = field(default_factory=BluetoothConfig)
     log_level: str = "INFO"
     monitor_interval_s: float = 5.0
     watchdog_sec: float = 30.0
@@ -166,6 +174,13 @@ class SystemConfig:
         if not log_root.is_absolute():
             log_root = Path(__file__).parent.parent / log_root
 
+        bt_raw = data.get("bluetooth", {})
+        bluetooth = BluetoothConfig(
+            enabled=bt_raw.get("enabled", False),
+            port=bt_raw.get("port",       "/dev/rfcomm0"),
+            baud=bt_raw.get("baud",       115200),
+        )
+
         rc_raw = data.get("radio_config", {})
         radio_config = RadioConfig(
             data_rate=rc_raw.get("data_rate",           1),
@@ -186,6 +201,7 @@ class SystemConfig:
             flight_stage=flight_stage,
             ground_station=ground_station,
             radio_config=radio_config,
+            bluetooth=bluetooth,
             log_level=system.get("log_level", "INFO"),
             monitor_interval_s=system.get("monitor_interval_s"),
             watchdog_sec=system.get("watchdog_sec"),

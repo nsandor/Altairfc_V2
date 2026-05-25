@@ -45,19 +45,26 @@ class CommandReceiverTask(BaseTask):
         name: str,
         period_s: float,
         datastore: DataStore,
-        transport,  # SerialTransport — no type import to avoid circular deps
+        transport,  # SerialTransport or BluetoothTransport
         buzzer: BuzzerPlayer | None = None,
+        owns_transport: bool = False,
+        extra_ack_transports: list | None = None,
     ) -> None:
         super().__init__(name, period_s, datastore)
         self._transport = transport
+        self._owns_transport = owns_transport
         self._serializer = PacketSerializer()
         self._buf = bytearray()
         self._ack_seq: int = 0
         self._buzzer = buzzer
+        self._extra_ack_transports: list = extra_ack_transports or []
 
     def setup(self) -> None:
-        # Transport already opened by TelemetryTask — do not call transport.open() here
-        logger.info("CommandReceiverTask: ready (sharing transport with TelemetryTask)")
+        if self._owns_transport:
+            self._transport.open()
+            logger.info("CommandReceiverTask: opened transport %s", getattr(self._transport, 'port', ''))
+        else:
+            logger.info("CommandReceiverTask: ready (sharing transport with TelemetryTask)")
 
     def execute(self) -> None:
         chunk = self._transport.read_available()
@@ -165,7 +172,9 @@ class CommandReceiverTask(BaseTask):
         ack_frame = self._serializer.pack(ack, seq=self._ack_seq)
         self._ack_seq = (self._ack_seq + 1) & 0xFF
         self._transport.send_priority(ack_frame)
+        for t in self._extra_ack_transports:
+            t.send_priority(ack_frame)
         logger.info(
-            "CommandReceiverTask: ACK sent (cmd_id=0x%02X cmd_seq=%d status=%d)",
-            cmd_id, cmd_seq, status,
+            "CommandReceiverTask: ACK sent (cmd_id=0x%02X cmd_seq=%d status=%d) on %d transport(s)",
+            cmd_id, cmd_seq, status, 1 + len(self._extra_ack_transports),
         )
