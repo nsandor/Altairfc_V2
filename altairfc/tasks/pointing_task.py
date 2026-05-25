@@ -41,6 +41,7 @@ class PointingTask(BaseTask):
         self._stability_threshold = pointing_config.stability_threshold
         self._saturation_rpm = pointing_config.saturation_rpm
         self._saturation_s = pointing_config.saturation_s
+        self._saturation_margin_rpm = 50.0
         self._switch_threshold = pointing_config.switch_threshold
         self._yaw_rate_deadband = pointing_config.yaw_rate_deadband
         self.period = period_s
@@ -90,14 +91,11 @@ class PointingTask(BaseTask):
             self._check()
             self.rw_controller.set_mode("stabilize")
             _, _, _, yaw_rate, _, rw_rpm = self._read()
-            acceleration = self._acceleration(yaw_rate)
             if abs(yaw_rate) < self._stabilize_yaw_rate and abs(rw_rpm) < self._saturation_rpm:
                 self._set_state(PointingState.POINTING)
             if self._is_saturated(rw_rpm):
-                if np.sign(rw_rpm) != np.sign(acceleration) or time.monotonic() - self._saturated_since <= 10.0:
-                    delta_rpm = self.rw_controller.output(yaw_rate)
-                else:
-                    delta_rpm = 0.0
+                self._set_state(PointingState.SATURATED)
+                return
             else:
                 delta_rpm = self.rw_controller.output(yaw_rate)
             
@@ -138,7 +136,7 @@ class PointingTask(BaseTask):
             
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
-        saturated = abs(rw_rpm) >= self._saturation_rpm
+        saturated = abs(rw_rpm) >= self._saturation_rpm - self._saturation_margin_rpm
         self.datastore.write("pointing.rw_saturated", 1.0 if saturated else 0.0)
 
         if not saturated:
@@ -155,7 +153,7 @@ class PointingTask(BaseTask):
         return False
     
     def _desaturate(self) -> None:
-        self.rw_controller.set_mode("saturation")
+        self.rw_controller.set_mode("saturated")
         _, _, _, yaw_rate, yaw, rw_rpm = self._read()
         saturation = self._is_saturated(rw_rpm)
 
