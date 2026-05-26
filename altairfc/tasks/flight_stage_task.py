@@ -394,7 +394,7 @@ class FlightStageTask(BaseTask):
                 logger.warning("FlightStageTask: actuator check failed — resetting and retrying")
                 self._actuator_checks.reset()
 
-            if self._actuator_checks.all_passed() and self._detect_launch(now, baro_alt):
+            if self._actuator_checks.all_passed():
                 self._write_flag("launch_initiated", 1)
                 self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH
