@@ -91,6 +91,7 @@ class PointingConfig:
     spinup_rpm: int = 2150
     spinup_s: float = 5.0
     stabilize_yaw_rate: float = 0.1
+    unstable_yaw_rate: float = 1.0
     stability_threshold: float = 5.0
     saturation_rpm: float = 3500.0
     saturation_s: float = 5.0
@@ -185,6 +186,7 @@ class SystemConfig:
             spinup_rpm=pointing_raw.get("spinup_rpm", 0.0),
             spinup_s=pointing_raw.get("spinup_s", 0.0),
             stabilize_yaw_rate=pointing_raw.get("stabilize_yaw_rate"),
+            unstable_yaw_rate=pointing_raw.get("unstable_yaw_rate", 1.0),
             stability_threshold=pointing_raw.get("stability_threshold"),
             saturation_rpm=pointing_raw.get("saturation_rpm", 3500.0),
             saturation_s=pointing_raw.get("saturation_s", 5.0),

@@ -36,6 +36,7 @@ class PointingTask(BaseTask):
         self._spinup_rpm = pointing_config.spinup_rpm
         self._spinup_s = pointing_config.spinup_s
         self._stabilize_yaw_rate = pointing_config.stabilize_yaw_rate
+        self._unstable_yaw_rate = pointing_config.unstable_yaw_rate
         self._stability_threshold = pointing_config.stability_threshold
         self._saturation_rpm = pointing_config.saturation_rpm
         self._saturation_s = pointing_config.saturation_s
@@ -164,7 +165,7 @@ class PointingTask(BaseTask):
         if filtered_yaw_rate is None:
             return False
 
-        if abs(filtered_yaw_rate) <= self._stabilize_yaw_rate:
+        if abs(filtered_yaw_rate) <= self._unstable_yaw_rate:
             self._unstable_since = None
             return False
 
@@ -195,7 +196,7 @@ class PointingTask(BaseTask):
         stable = self._is_stable(yaw_rate)
 
 
-        if stable:
+        if stable or time.monotonic() - self._state_started > 300.0:
             self._set_state(PointingState.POINTING)
             return
 
