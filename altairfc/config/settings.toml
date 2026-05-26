@@ -73,6 +73,7 @@ pointing_activate_altitude_m  = 10000   # GPS MSL altitude (m) above which motor
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
 auto_advance                  = true      # automatically advance PREFLIGHT→ARMED without ARM command
 preflight_debounce_s          = 5.0       # seconds preflight checks must pass continuously before auto-arming
+bypass_launch_altitude_checks = true      # automatically advance ARMED→LAUNCH→ASCENT without altitude gain
 
 [system]
 log_level = "INFO"

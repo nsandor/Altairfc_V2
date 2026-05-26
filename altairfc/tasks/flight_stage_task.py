@@ -237,6 +237,9 @@ class FlightStageTask(BaseTask):
             termination_confirm_window_s = self._read_required_float("settings.termination_confirm_window_s"), 
             pointing_activate_altitude_m = self._read_required_float("settings.pointing_activate_altitude_m"),
             pointing_duration_min        = self._read_required_float("settings.pointing_duration_min"),
+            auto_advance                  = self._cfg.auto_advance,
+            preflight_debounce_s          = self._cfg.preflight_debounce_s,
+            bypass_launch_altitude_checks = self._cfg.bypass_launch_altitude_checks,
         )
 
         # Keep rolling altitude history and update apogee
@@ -320,13 +323,24 @@ class FlightStageTask(BaseTask):
 
         elif stage == STAGE_ARMED:
             self._write_flag("arm_state", 1)
-            if self._detect_launch(now, baro_alt):
+            if cfg.bypass_launch_altitude_checks:
+                logger.info("FlightStageTask: launch altitude checks bypassed - advancing to STAGE_LAUNCH")
+                self._write_flag("launch_initiated", 1)
+                self._launch_ok_alt = baro_alt
+                return STAGE_LAUNCH
+            elif self._detect_launch(now, baro_alt):
                 self._write_flag("launch_initiated", 1)
                 self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH
 
         elif stage == STAGE_LAUNCH:
-            if self._detect_ascent(baro_alt, cfg):
+            if cfg.bypass_launch_altitude_checks:
+                logger.info("FlightStageTask: ascent altitude checks bypassed - advancing to STAGE_ASCENT")
+                self._write_flag("ascent_active", 1)
+                self._measured_apogee = baro_alt
+                self._ascent_entered_time = now
+                return STAGE_ASCENT
+            elif self._detect_ascent(baro_alt, cfg):
                 self._write_flag("ascent_active", 1)
                 self._measured_apogee = baro_alt
                 self._ascent_entered_time = now
