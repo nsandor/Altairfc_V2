@@ -95,6 +95,72 @@ _ASCENT_LOCKOUT_S = 600.0  # 10 minutes
 _LAUNCH_GAIN_M   = 20.0
 _LAUNCH_WINDOW_S = 10.0
 
+# Actuator check: RW spin test
+_RW_TEST_RPM          = 2000    # ERPM commanded during the spin test
+_RW_TEST_RPM_MARGIN   = 200     # how close rw.rpm must get to pass (ERPM)
+_RW_TEST_TIMEOUT_S    = 15.0    # max seconds to wait for the motor to respond
+_RW_TEST_COAST_RPM    = 0       # RPM written after test completes
+
+
+class _ActuatorChecks:
+    """
+    Tracks one-shot actuator checks that must all pass before ARMED→LAUNCH.
+
+    Each check has three states:
+        pending  — not yet started
+        running  — command sent, waiting for confirmation
+        passed   — confirmed
+        failed   — timed out or error
+
+    To add a new check: add an attribute (False = pending) and a corresponding
+    _check_<name>() method called from run(). Return True from run() only when
+    all checks have passed.
+    """
+
+    def __init__(self) -> None:
+        self.rw_spin: str = "pending"   # "pending" | "running" | "passed" | "failed"
+        self._rw_started_at: float | None = None
+
+    def reset(self) -> None:
+        self.rw_spin = "pending"
+        self._rw_started_at = None
+
+    def all_passed(self) -> bool:
+        return self.rw_spin == "passed"
+
+    def any_failed(self) -> bool:
+        return self.rw_spin == "failed"
+
+    def run(self, now: float, datastore: DataStore) -> None:
+        """Advance all checks one step. Call every execute() cycle while in STAGE_ARMED."""
+        self._check_rw_spin(now, datastore)
+
+    def _check_rw_spin(self, now: float, datastore: DataStore) -> None:
+        if self.rw_spin == "passed":
+            return
+
+        if self.rw_spin == "pending":
+            logger.info("ActuatorChecks: commanding RW spin test at %d ERPM", _RW_TEST_RPM)
+            datastore.write("command.rw_test_rpm", float(_RW_TEST_RPM))
+            self._rw_started_at = now
+            self.rw_spin = "running"
+            return
+
+        if self.rw_spin == "running":
+            elapsed = now - (self._rw_started_at or now)
+            rpm = abs(float(datastore.read("rw.rpm", default=0.0)))
+            if rpm >= _RW_TEST_RPM - _RW_TEST_RPM_MARGIN:
+                logger.info("ActuatorChecks: RW spin test passed (rpm=%.0f)", rpm)
+                datastore.write("command.rw_test_rpm", float(_RW_TEST_COAST_RPM))
+                self.rw_spin = "passed"
+            elif elapsed > _RW_TEST_TIMEOUT_S:
+                logger.error(
+                    "ActuatorChecks: RW spin test FAILED — rpm=%.0f after %.1f s",
+                    rpm, elapsed,
+                )
+                datastore.write("command.rw_test_rpm", float(_RW_TEST_COAST_RPM))
+                self.rw_spin = "failed"
+
 
 class FlightStageTask(BaseTask):
     """
@@ -171,7 +237,8 @@ class FlightStageTask(BaseTask):
         }
 
         self._arm_cmd_pending: bool = False
-        self._preflight_ok_since: float | None = None  # monotonic time when preflight first passed
+        self._preflight_ok_since: float | None = None
+        self._actuator_checks: _ActuatorChecks = _ActuatorChecks()
 
         self._pointing_start_time = None
 
@@ -313,6 +380,7 @@ class FlightStageTask(BaseTask):
                     self._write_flag("arm_checks_ok", 1)
                     self._write_flag("arm_state", 1)
                     self._alt_history.clear()
+                    self._actuator_checks.reset()
                     logger.info("FlightStageTask: arm checks passed — advancing to STAGE_ARMED")
                     return STAGE_ARMED
                 else:
@@ -320,7 +388,13 @@ class FlightStageTask(BaseTask):
 
         elif stage == STAGE_ARMED:
             self._write_flag("arm_state", 1)
-            if self._detect_launch(now, baro_alt):
+            self._actuator_checks.run(now, self.datastore)
+
+            if self._actuator_checks.any_failed():
+                logger.warning("FlightStageTask: actuator check failed — resetting and retrying")
+                self._actuator_checks.reset()
+
+            if self._actuator_checks.all_passed() and self._detect_launch(now, baro_alt):
                 self._write_flag("launch_initiated", 1)
                 self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH

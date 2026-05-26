@@ -43,6 +43,10 @@ class RWTask(BaseTask):
             self._store()
             if int(self.datastore.read("event.pointing_active", default=0.0)) == 1:
                 break
+            test_rpm = self.datastore.read("command.rw_test_rpm", default=None)
+            if test_rpm is not None:
+                self.datastore.write("command.rw_test_rpm", None)
+                self.motor.set_rpm(int(test_rpm))
             self._stop_event.wait(timeout=0.5)
 
         if self._stop_event.is_set():
