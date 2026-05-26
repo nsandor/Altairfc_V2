@@ -56,7 +56,7 @@ class PointingTask(BaseTask):
         self._saturated_since = None
         self._stable_since = None
         self._unstable_since = None
-        self._yaw_rate_window = deque(maxlen=max(5, int(1.0 / self.period)))
+        self._yaw_rate_window = deque(maxlen=max(5, int(0.5 / self.period)))
 
         if self.rw is not None:
             if not self.rw.connect():
