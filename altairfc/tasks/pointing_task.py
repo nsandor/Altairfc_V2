@@ -170,57 +170,61 @@ class PointingTask(BaseTask):
 
         return (now - self._unstable_since) < self._stability_threshold
     
-    def _desaturate(self) -> None:
-        self.rw_controller.set_mode("saturated")
-        _, _, _, yaw_rate, yaw, rw_rpm = self._read()
-        saturation = self._is_saturated(rw_rpm)
+    # def _desaturate(self) -> None:
+    #     self.rw_controller.set_mode("saturated")
+    #     _, _, _, yaw_rate, yaw, rw_rpm = self._read()
+    #     saturation = self._is_saturated(rw_rpm)
 
-        target = yaw + self._target_offset
+    #     target = yaw + self._target_offset
 
-        moving_away = (
-            abs(yaw) > self._switch_threshold
-            and np.sign(yaw_rate) != np.sign(yaw)
-            and abs(yaw_rate) > self._yaw_rate_deadband
-        )
+    #     moving_away = (
+    #         abs(yaw) > self._switch_threshold
+    #         and np.sign(yaw_rate) != np.sign(yaw)
+    #         and abs(yaw_rate) > self._yaw_rate_deadband
+    #     )
 
-        if saturation and moving_away and self._allow_switch == 1:
-            self._target_offset += -np.sign(rw_rpm) * 2*np.pi
-            self._allow_switch = 0
-            self._count = 0
-            self._hold_count = 0
+    #     if saturation and moving_away and self._allow_switch == 1:
+    #         self._target_offset += -np.sign(rw_rpm) * 2*np.pi
+    #         self._allow_switch = 0
+    #         self._count = 0
+    #         self._hold_count = 0
 
-        target = yaw + self._target_offset
+    #     target = yaw + self._target_offset
 
-        moving_toward = (
-            np.sign(yaw_rate) == np.sign(yaw)
-            and abs(yaw_rate) > self._yaw_rate_deadband
-        )
+    #     moving_toward = (
+    #         np.sign(yaw_rate) == np.sign(yaw)
+    #         and abs(yaw_rate) > self._yaw_rate_deadband
+    #     )
 
-        if np.deg2rad(30) < abs(yaw) < np.deg2rad(170) and moving_toward:
-            self._allow_switch = 0
-            self._count += 1
+    #     if np.deg2rad(30) < abs(yaw) < np.deg2rad(170) and moving_toward:
+    #         self._allow_switch = 0
+    #         self._count += 1
 
-        if self._allow_switch == 0:
-            self._count += 1
+    #     if self._allow_switch == 0:
+    #         self._count += 1
 
-        if not saturation:
-            self._hold_count += 1
-            if self._hold_count >= 80:
-                self._allow_switch = 1
-                self._target_offset = 0.0
-                self._set_state(PointingState.STABILIZE)
-        else:
-            self._hold_count = 0
+    #     if not saturation:
+    #         self._hold_count += 1
+    #         if self._hold_count >= 80:
+    #             self._allow_switch = 1
+    #             self._target_offset = 0.0
+    #             self._set_state(PointingState.STABILIZE)
+    #     else:
+    #         self._hold_count = 0
 
 
-        if self._count >= 3600:
-            self._allow_switch = 1
-            self._count = 0
+    #     if self._count >= 3600:
+    #         self._allow_switch = 1
+    #         self._count = 0
         
-        self.err = target
-        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
+    #     self.err = target
+    #     delta_rpm = self.rw_controller.output(self.err, yaw_rate)
 
-        self.rw.set_rpm(int(rw_rpm + delta_rpm))
+    #     self.rw.set_rpm(int(rw_rpm + delta_rpm))
+    def _desaturate(self) -> None:
+        self.rw.set_rpm(0)
+        self._set_state(PointingState.STABILIZE)
+        self.rw_controller.set_mode("saturated")
     
     def _acceleration(self, yaw_rate: float) -> float:
         self._rate_sum_window.append(yaw_rate)
