@@ -4,7 +4,7 @@ import logging
 import time
 from enum import Enum
 import numpy as np
-
+import deque
 from config.settings import ControllerConfig, GroundStationConfig, PointingConfig, SerialPortConfig
 from controls.controller import GainScheduledController
 from controls.error_computation import compute_error
@@ -54,6 +54,7 @@ class PointingTask(BaseTask):
         self._state_started = time.monotonic()
         self._saturated_since = None
         self._stable_since = None
+        self._yaw_rate_window = deque(maxlen=max(5, int(1.0 / self.period)))
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -95,6 +96,7 @@ class PointingTask(BaseTask):
         self.rw.close()
     
     def _point(self) -> None:
+        self.rw_controller.set_mode("pointing")
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
@@ -106,7 +108,6 @@ class PointingTask(BaseTask):
         if not stability:
             self._set_state(PointingState.STABILIZE)
             return
-        self.rw_controller.set_mode("pointing")
         rw_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
 
         self.rw.set_rpm(int(rw_rpm))
@@ -133,7 +134,16 @@ class PointingTask(BaseTask):
     def _is_stable(self, yaw_rate: float) -> bool:
         now = time.monotonic()
 
-        if abs(yaw_rate) > self._stabilize_yaw_rate:
+        self._yaw_rate_window.append(yaw_rate)
+
+        # Wait until the window is populated before trusting the decision.
+        if len(self._yaw_rate_window) < self._yaw_rate_window.maxlen:
+            self._stable_since = None
+            return False
+
+        filtered_yaw_rate = float(np.median(self._yaw_rate_window))
+
+        if abs(filtered_yaw_rate) > self._stabilize_yaw_rate:
             self._stable_since = None
             return False
 
@@ -234,3 +244,4 @@ class PointingTask(BaseTask):
             self._state_started = time.monotonic()
             self._stable_since = None
             self._saturated_since = None
+            self._yaw_rate_window.clear()

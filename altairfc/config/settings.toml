@@ -74,7 +74,7 @@ bypass_launch_altitude_checks = true      # automatically advance ARMED→LAUNCH
 [pointing]
 spinup_rpm = 0.0
 spinup_s = 0.0
-stabilize_yaw_rate = 0.4
+stabilize_yaw_rate = 0.5
 stability_threshold = 3.0
 saturation_rpm = 2600.0
 saturation_s = 5.0
@@ -125,7 +125,7 @@ min_rpm = -3000.0
 [controller.reaction_wheel.stabilize]
 Kp = 800.0
 Kd = 0.0
-Ki = 5.0
+Ki = 0.0
 max_rpm = 3000.0
 min_rpm = -3000.0
 
