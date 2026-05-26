@@ -29,7 +29,7 @@ logger = logging.getLogger("main")
 # ---------------------------------------------------------------------------
 # Project imports
 # ---------------------------------------------------------------------------
-from config.settings import SystemConfig
+from config.settings import ControllerConfig, GroundStationConfig, SerialPortConfig, SystemConfig
 from core.datastore import DataStore
 from core.lifecycle import install_signal_handlers, shutdown_event
 from core.scheduler import TaskScheduler
@@ -66,13 +66,13 @@ from tasks.command_receiver_task import CommandReceiverTask
 from tasks.flight_stage_task import FlightStageTask
 from tasks.photodiode_task import PhotodiodeTask
 from tasks.power_task import PowerTask
-from tasks.rw_task import RWTask
-from tasks.mm_task import MMTask
 from telemetry.telemetry_task import TelemetryTask
 from telemetry.transport import SerialTransport
 from tasks.pitch_task import PitchTask
 from tasks.datalogger_task import DataLoggerTask
 from tasks.radio_config_task import RadioConfigTask
+from tasks.pointing_task import PointingTask
+
 
 
 def main() -> None:
@@ -107,8 +107,6 @@ def main() -> None:
     # FlightStageTask, RWTask, and MMTask read these keys each cycle so that
     # an UpdateSettingCommand from the GS takes effect without a restart.
     _fs = config.flight_stage
-    _rw = config.controller["reaction_wheel"]
-    _mm = config.controller["momentum_management"]
     for _key, _val in {
         "settings.termination_altitude_m":       _fs.termination_altitude_m,
         "settings.burst_altitude_m":             _fs.burst_altitude_m,
@@ -122,12 +120,6 @@ def main() -> None:
         "settings.termination_confirm_window_s": _fs.termination_confirm_window_s,
         "settings.pointing_activate_altitude_m": _fs.pointing_activate_altitude_m,
         "settings.pointing_duration_min":        _fs.pointing_duration_min,
-        "settings.rw_kp":          _rw.Kp,
-        "settings.rw_kd":          _rw.Kd,
-        "settings.rw_max_rpm":     _rw.max,
-        "settings.mm_kp":          _mm.Kp,
-        "settings.mm_kd":          _mm.Kd,
-        "settings.mm_max_current": _mm.max,
     }.items():
         datastore.write(_key, float(_val))
     datastore.write("settings.gs_use_hardcoded", 1.0 if config.ground_station.use_hardcoded else 0.0)
@@ -142,16 +134,6 @@ def main() -> None:
     # Register tasks — scheduler.register() silently skips disabled tasks
     # ------------------------------------------------------------------
 
-    scheduler.register(
-        RWTask(
-            name="rw_control",
-            period_s=config.tasks["rw_control"].period_s,
-            datastore=datastore,
-            vesc_port=config.rw_esc,
-            controller_config=config.controller["reaction_wheel"],
-            ground_station=config.ground_station,
-        )
-    )
     
     scheduler.register(
         MavlinkTask(
@@ -171,21 +153,23 @@ def main() -> None:
     )
 
     scheduler.register(
-        MMTask(
-            name="mm_control",
-            period_s=config.tasks["mm_control"].period_s,
-            datastore=datastore,
-            vesc_port=config.mm_esc,
-            controller_config=config.controller["momentum_management"],
-        )
-    )
-
-    scheduler.register(
         PitchTask(
             name="sphere_pitch",
             period_s=config.tasks["sphere_pitch"].period_s,
             datastore=datastore,
             ground_station=config.ground_station,
+        )
+    )
+
+    scheduler.register(
+        PointingTask(
+            name    = "pointing",
+            period_s    = config.tasks["pointing"].period_s,
+            datastore   = datastore,
+            rw_port = config.rw_esc,
+            rw_controller_config    = config.controller["reaction_wheel"],
+            ground_station  = config.ground_station,
+            pointing_config = config.pointing,
         )
     )
 

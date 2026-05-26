@@ -38,6 +38,21 @@ class ControllerConfig:
     max: float = 0.0
     min: float = 0.0
 
+ControllerConfigMap = dict[str, ControllerConfig | dict[str, ControllerConfig]]
+
+
+def _build_controller_config(cfg: dict[str, Any]) -> ControllerConfig:
+    max_val = cfg.get("max_rpm", cfg.get("max_current"))
+    min_val = cfg.get("min_rpm", cfg.get("min_current"))
+    return ControllerConfig(
+        Kp=cfg["Kp"],
+        Ki=cfg["Ki"],
+        Kd=cfg["Kd"],
+        max=max_val,
+        min=min_val,
+    )
+
+
 @dataclass
 class SerialPortConfig:
     port: str
@@ -53,6 +68,14 @@ class TaskConfig:
 
 
 @dataclass
+class FlightStageRequireConfig:
+    mavlink: bool = True
+    rw_vesc: bool = True
+    mm_vesc: bool = False
+    gps:     bool = False
+
+
+@dataclass
 class FlightStageConfig:
     termination_altitude_m:       float = 25000.0
     burst_altitude_m:             float = 30000.0
@@ -64,12 +87,25 @@ class FlightStageConfig:
     recovery_stationary_s:        float = 10.0
     termination_confirm_drop_m:   float = 100.0
     termination_confirm_window_s: float = 30.0
-    pointing_activate_altitude_m: float = 18000.0   
-    pointing_duration_min:        float = 120.0 
+    pointing_activate_altitude_m: float = 18000.0
+    pointing_duration_min:        float = 120.0
+    auto_advance:                  bool  = True
+    preflight_debounce_s:          float = 5.0
+    bypass_launch_altitude_checks: bool  = False
+    require:                       FlightStageRequireConfig = field(default_factory=FlightStageRequireConfig)
 
 
-
-
+@dataclass
+class PointingConfig:
+    spinup_rpm: int = 2150
+    spinup_s: float = 5.0
+    stabilize_yaw_rate: float = 0.1
+    unstable_yaw_rate: float = 1.0
+    stability_threshold: float = 5.0
+    saturation_rpm: float = 3500.0
+    saturation_s: float = 5.0
+    switch_threshold: float = 0.26
+    yaw_rate_deadband: float = 0.05
 @dataclass
 class RadioConfig:
     data_rate:      int   = 1     # 0=Low, 1=Mid, 2=High
@@ -96,10 +132,10 @@ class SystemConfig:
     mavlink: SerialPortConfig
     telemetry: SerialPortConfig | None
     rw_esc: SerialPortConfig
-    mm_esc: SerialPortConfig
-    controller: dict[str, ControllerConfig]
+    controller: ControllerConfigMap
     tasks: dict[str, TaskConfig]
     flight_stage: FlightStageConfig = field(default_factory=FlightStageConfig)
+    pointing: PointingConfig = field(default_factory=PointingConfig)
     ground_station: GroundStationConfig = field(
         default_factory=lambda: GroundStationConfig(latitude=0.0, longitude=0.0, altitude=0.0)
     )
@@ -116,15 +152,15 @@ class SystemConfig:
         mavlink = SerialPortConfig(**data["mavlink"])
         telemetry = _resolve_serial_port(data["telemetry"])
         rw_esc = SerialPortConfig(**data["rw_esc"])
-        mm_esc = SerialPortConfig(**data["mm_esc"])
-        controller = {}
+        controller: ControllerConfigMap = {}
         for name, cfg in data.get("controller", {}).items():
-            max_val = cfg.get("max_rpm", cfg.get("max_current"))
-            min_val = cfg.get("min_rpm", cfg.get("min_current"))
-            controller[name] = ControllerConfig(
-                Kp=cfg["Kp"], Ki=cfg["Ki"], Kd=cfg["Kd"],
-                max=max_val, min=min_val,
-            )
+            if "Kp" in cfg:
+                controller[name] = _build_controller_config(cfg)
+            else:
+                controller[name] = {
+                    mode: _build_controller_config(mode_cfg)
+                    for mode, mode_cfg in cfg.items()
+                }
 
         tasks: dict[str, TaskConfig] = {}
         for name, cfg in data.get("tasks", {}).items():
@@ -136,6 +172,13 @@ class SystemConfig:
             )
 
         fs_raw = data.get("flight_stage", {})
+        req_raw = fs_raw.get("require", {})
+        require = FlightStageRequireConfig(
+            mavlink=req_raw.get("mavlink", True),
+            rw_vesc=req_raw.get("rw_vesc", True),
+            mm_vesc=req_raw.get("mm_vesc", False),
+            gps=req_raw.get("gps",     False),
+        )
         flight_stage = FlightStageConfig(
             termination_altitude_m=fs_raw.get("termination_altitude_m"),
             burst_altitude_m=fs_raw.get("burst_altitude_m"),
@@ -149,6 +192,23 @@ class SystemConfig:
             termination_confirm_window_s=fs_raw.get("termination_confirm_window_s"),
             pointing_activate_altitude_m=fs_raw.get("pointing_activate_altitude_m"),
             pointing_duration_min=fs_raw.get("pointing_duration_min"),
+            auto_advance=fs_raw.get("auto_advance", True),
+            preflight_debounce_s=fs_raw.get("preflight_debounce_s", 5.0),
+            bypass_launch_altitude_checks=fs_raw.get("bypass_launch_altitude_checks", False),
+            require=require,
+        )
+
+        pointing_raw =  data.get("pointing", {})
+        pointing = PointingConfig(
+            spinup_rpm=pointing_raw.get("spinup_rpm", 0.0),
+            spinup_s=pointing_raw.get("spinup_s", 0.0),
+            stabilize_yaw_rate=pointing_raw.get("stabilize_yaw_rate"),
+            unstable_yaw_rate=pointing_raw.get("unstable_yaw_rate", 1.0),
+            stability_threshold=pointing_raw.get("stability_threshold"),
+            saturation_rpm=pointing_raw.get("saturation_rpm", 3500.0),
+            saturation_s=pointing_raw.get("saturation_s", 5.0),
+            switch_threshold=pointing_raw.get("switch_threshold", 0.26),
+            yaw_rate_deadband=pointing_raw.get("yaw_rate_deadband", 0.05),
         )
 
         gs_raw = data.get("ground_station", {})
@@ -180,10 +240,10 @@ class SystemConfig:
             mavlink=mavlink,
             telemetry=telemetry,
             rw_esc=rw_esc,
-            mm_esc=mm_esc,
             controller=controller,
             tasks=tasks,
             flight_stage=flight_stage,
+            pointing=pointing,
             ground_station=ground_station,
             radio_config=radio_config,
             log_level=system.get("log_level", "INFO"),

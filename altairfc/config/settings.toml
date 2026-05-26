@@ -14,13 +14,9 @@ period_s = 0.02   # 50 Hz
 enabled = true
 period_s = 0.05    # 20 Hz tick — each packet type has its own TX_RATE_HZ set in its class
 
-[tasks.rw_control]
+[tasks.pointing]
 enabled = true
-period_s = 0.05   # 20 Hz
-
-[tasks.mm_control]
-enabled = false
-period_s = 5.0    # 0.2 Hz
+period_s = 0.05
 
 [tasks.sphere_pitch]
 enabled = false
@@ -69,8 +65,28 @@ landing_fraction              = 0.05      # landing declared when alt ≤ this �
 recovery_stationary_s         = 10.0      # seconds of altitude stationary (±2 m) → recovery
 termination_confirm_drop_m    = 100.0     # altitude drop required to confirm cutdown worked (m)
 termination_confirm_window_s  = 30.0      # time window for termination confirmation (s)
-pointing_activate_altitude_m  = 10000   # GPS MSL altitude (m) above which motors activate
+pointing_activate_altitude_m  = -200.0   # GPS MSL altitude (m) above which motors activate
 pointing_duration_min         = 120.0     # how long to run motor control after activation (minutes)
+auto_advance                  = true      # automatically advance PREFLIGHT→ARMED without ARM command
+preflight_debounce_s          = 5.0       # seconds preflight checks must pass continuously before auto-arming
+bypass_launch_altitude_checks = true      # automatically advance ARMED→LAUNCH→ASCENT without altitude gain
+
+[pointing]
+spinup_rpm = 0.0
+spinup_s = 0.0
+stabilize_yaw_rate = 1.5
+unstable_yaw_rate = 1.0
+stability_threshold = 3.0
+saturation_rpm = 2600.0
+saturation_s = 5.0
+switch_threshold = 0.2
+yaw_rate_deadband = 0.05
+
+[flight_stage.require]
+mavlink   = true    # MAVLink attitude data must be fresh
+rw_vesc   = true    # reaction wheel VESC must be reporting
+mm_vesc   = false   # momentum management VESC must be reporting
+gps       = false   # GPS must have a valid fix before arming
 
 [system]
 log_level = "INFO"
@@ -106,17 +122,19 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 # Effective rate = TX_RATE_HZ * scale. Keeps the TX queue from overflowing at lower data rates.
 rate_scale = [0.1, 0.33, 1.0]
 
-[controller.reaction_wheel]
-Kp = 12740.0
-Kd = 1092.0
+[controller.reaction_wheel.pointing]
+Kp = 3588.0
+Kd = 234.0
 Ki = 0.0
-max_rpm = 2150.0
-min_rpm = -2130.0
+max_rpm = 3000.0
+min_rpm = -3000.0
+
+[controller.reaction_wheel.stabilize]
+Kp = 624.0
+Kd = 0.0
+Ki = 0.0
+max_rpm = 3000.0
+min_rpm = -3000.0
 
 
-[controller.momentum_management]
-Kp = 0.005
-Kd = 0.02
-Ki = 0.0
-max_current = 4000.0
-min_current = -4000.0
+
