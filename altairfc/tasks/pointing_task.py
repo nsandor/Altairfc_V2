@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import time
-from collections import deque
 from enum import Enum
 import numpy as np
 
@@ -37,7 +36,6 @@ class PointingTask(BaseTask):
         self._spinup_rpm = pointing_config.spinup_rpm
         self._spinup_s = pointing_config.spinup_s
         self._stabilize_yaw_rate = pointing_config.stabilize_yaw_rate
-        self._max_slew_rate = pointing_config.max_slew_rate
         self._stability_threshold = pointing_config.stability_threshold
         self._saturation_rpm = pointing_config.saturation_rpm
         self._saturation_s = pointing_config.saturation_s
@@ -55,15 +53,7 @@ class PointingTask(BaseTask):
         self._state = PointingState.IDLE
         self._state_started = time.monotonic()
         self._saturated_since = None
-        self._unstable_since = None
-        self._rate_sum_window = deque(maxlen=max(1, int(5.0 / self.period)))
-        self._last_rate_sum = None
-        self.err = 0.0
-        self._allow_switch = 1
-        self._target_offset = 0.0
-        self._count = 0
-        self._hold_count = 0
-        self.j = 0.0
+        self._stable_since = None
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -138,16 +128,16 @@ class PointingTask(BaseTask):
 
     def _is_stable(self, yaw_rate: float) -> bool:
         now = time.monotonic()
-        unstable = abs(yaw_rate) > self._stabilize_yaw_rate
 
-        if not unstable:
-            self._unstable_since = None
-            return True
+        if abs(yaw_rate) > self._stabilize_yaw_rate:
+            self._stable_since = None
+            return False
 
-        if self._unstable_since is None:
-            self._unstable_since = now
+        if self._stable_since is None:
+            self._stable_since = now
+            return False
 
-        return (now - self._unstable_since) < self._stability_threshold
+        return (now - self._stable_since) >= self._stability_threshold
 
     def _desaturate(self) -> None:
         self.rw.set_rpm(0)
@@ -243,7 +233,4 @@ class PointingTask(BaseTask):
             self._state = state
             self._state_started = time.monotonic()
             self._stable_since = None
-            self._unstable_since = None
             self._saturated_since = None
-            self._rate_sum_window.clear()
-            self._last_rate_sum = None
