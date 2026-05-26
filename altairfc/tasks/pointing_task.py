@@ -55,6 +55,7 @@ class PointingTask(BaseTask):
         self._state = PointingState.IDLE
         self._state_started = time.monotonic()
         self._saturated_since = None
+        self._unstable_since = None
         self._rate_sum_window = deque(maxlen=max(1, int(5.0 / self.period)))
         self._last_rate_sum = None
         self.err = 0.0
@@ -94,7 +95,8 @@ class PointingTask(BaseTask):
             _, _, _, yaw_rate, _, rw_rpm = self._read()
             saturated = self._is_saturated(rw_rpm)
             trend = self._acceleration(yaw_rate)
-            if abs(yaw_rate) >= self._stabilize_yaw_rate or time.monotonic() - self._state_started < 10.0:
+            stability = self._is_stable(yaw_rate)
+            if not stability or time.monotonic() - self._state_started < 10.0:
                 if np.sign(trend) != np.sign(yaw_rate):
                     delta_rpm = self.rw_controller.output(yaw_rate)
                 elif saturated:
@@ -124,10 +126,11 @@ class PointingTask(BaseTask):
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
+        stability = self._is_stable(yaw_rate)
         if saturation:
             self._set_state(PointingState.SATURATED)
             return
-        elif abs(yaw_rate) > self._stabilize_yaw_rate:
+        elif not stability:
             self._set_state(PointingState.STABILIZE)
             return
         elif abs(yaw) > 0.5:
@@ -157,6 +160,19 @@ class PointingTask(BaseTask):
         if elapsed >= self._saturation_s:
             return True
         return False
+
+    def _is_stable(self, yaw_rate: float) -> bool:
+        now = time.monotonic()
+        unstable = abs(yaw_rate) > self._stabilize_yaw_rate
+
+        if not unstable:
+            self._unstable_since = None
+            return True
+
+        if self._unstable_since is None:
+            self._unstable_since = now
+
+        return (now - self._unstable_since) < self._stability_threshold
     
     def _desaturate(self) -> None:
         self.rw_controller.set_mode("saturated")
@@ -288,6 +304,7 @@ class PointingTask(BaseTask):
             self._state = state
             self._state_started = time.monotonic()
             self._stable_since = None
+            self._unstable_since = None
             self._saturated_since = None
             self._rate_sum_window.clear()
             self._last_rate_sum = None
