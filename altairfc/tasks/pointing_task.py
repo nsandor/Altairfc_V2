@@ -95,16 +95,13 @@ class PointingTask(BaseTask):
             _, _, _, yaw_rate, _, rw_rpm = self._read()
             saturated = self._is_saturated(rw_rpm)
             stability = self._is_stable(yaw_rate)
-            if abs(yaw_rate) > self._stabilize_yaw_rate or time.monotonic() - self._state_started < 10.0:
-                delta_rpm = self.rw_controller.output(yaw_rate)
-            elif stability:
+            rw_rpm = self.rw_controller.output(yaw_rate)
+            if stability:
                 self._set_state(PointingState.POINTING)
-                delta_rpm = 0.0
-            elif saturated:
+            if saturated:
                 self._set_state(PointingState.SATURATED)
-                delta_rpm = 0.0
             
-            self.rw.set_rpm(int(rw_rpm + delta_rpm))
+            self.rw.set_rpm(int(rw_rpm))
 
         
         elif self._state == PointingState.POINTING:
@@ -133,14 +130,7 @@ class PointingTask(BaseTask):
         self.rw_controller.set_mode("pointing")
         delta_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
 
-        if abs(rw_rpm) > 1500:
-            fraction = (abs(rw_rpm) - 1500) / (self._saturation_rpm - 1500)
-            fraction = np.clip(fraction, 0.0, 1.0)
-
-            unload = -np.sign(rw_rpm) * fraction * 300
-            delta_rpm += unload
-
-        self.rw.set_rpm(int(rw_rpm + delta_rpm))
+        self.rw.set_rpm(int(rw_rpm))
 
             
     def _is_saturated(self, rw_rpm: float) -> bool:
