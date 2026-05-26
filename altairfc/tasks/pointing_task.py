@@ -99,8 +99,12 @@ class PointingTask(BaseTask):
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
+        stability = self._is_stable(yaw_rate)
         if saturation:
             self._set_state(PointingState.SATURATED)
+            return
+        if not stability:
+            self._set_state(PointingState.STABILIZE)
             return
         self.rw_controller.set_mode("pointing")
         rw_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
@@ -141,7 +145,8 @@ class PointingTask(BaseTask):
 
     def _desaturate(self) -> None:
         self.rw.set_rpm(0)
-        if time.monotonic() - self._state_started >= 5.0:
+        _, _, _, _, _, rw_rpm = self._read()
+        if time.monotonic() - self._state_started >= 5.0 and abs(rw_rpm) < 100:
             self._set_state(PointingState.STABILIZE)
     
     def _stabilize(self) -> None:
