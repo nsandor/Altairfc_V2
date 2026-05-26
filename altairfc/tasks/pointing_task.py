@@ -203,7 +203,7 @@ class PointingTask(BaseTask):
         if self._allow_switch == 0:
             self._count += 1
 
-        if not saturation  and abs(yaw_rate) < self._stabilize_yaw_rate:
+        if not saturation:
             self._hold_count += 1
             if self._hold_count >= 80:
                 self._allow_switch = 1
