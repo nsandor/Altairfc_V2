@@ -82,6 +82,12 @@ saturation_s = 5.0
 switch_threshold = 0.2
 yaw_rate_deadband = 0.05
 
+[flight_stage.require]
+mavlink   = true    # MAVLink attitude data must be fresh
+rw_vesc   = true    # reaction wheel VESC must be reporting
+mm_vesc   = false   # momentum management VESC must be reporting
+gps       = false   # GPS must have a valid fix before arming
+
 [system]
 log_level = "INFO"
 monitor_interval_s = 5.0

@@ -1,10 +1,10 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import logging
 import time
 from collections import deque
 
-from config.settings import FlightStageConfig
+from config.settings import FlightStageConfig, FlightStageRequireConfig
 from core.datastore import DataStore
 from core.task_base import BaseTask
 from typing import TYPE_CHECKING
@@ -95,6 +95,62 @@ _ASCENT_LOCKOUT_S = 600.0  # 10 minutes
 _LAUNCH_GAIN_M   = 20.0
 _LAUNCH_WINDOW_S = 10.0
 
+# Actuator check: RW connection
+_RW_CONNECT_TIMEOUT_S = 15.0   # max seconds to wait for PointingTask to confirm RW connected
+
+
+class _ActuatorChecks:
+    """
+    Tracks one-shot actuator checks that must all pass before ARMED→LAUNCH.
+
+    Each check has three states:
+        pending  — not yet started
+        running  — waiting for confirmation
+        passed   — confirmed
+        failed   — timed out or error
+
+    To add a new check: add an attribute and a corresponding _check_<name>()
+    method called from run().
+    """
+
+    def __init__(self) -> None:
+        self.rw_connected: str = "pending"   # "pending" | "running" | "passed" | "failed"
+        self._rw_started_at: float | None = None
+
+    def reset(self) -> None:
+        self.rw_connected = "pending"
+        self._rw_started_at = None
+
+    def all_passed(self) -> bool:
+        return self.rw_connected == "passed"
+
+    def any_failed(self) -> bool:
+        return self.rw_connected == "failed"
+
+    def run(self, now: float, datastore: DataStore) -> None:
+        """Advance all checks one step. Call every execute() cycle while in STAGE_ARMED."""
+        self._check_rw_connected(now, datastore)
+
+    def _check_rw_connected(self, now: float, datastore: DataStore) -> None:
+        if self.rw_connected == "passed":
+            return
+
+        if self.rw_connected == "pending":
+            logger.info("ActuatorChecks: waiting for RW VESC connection confirmation")
+            self._rw_started_at = now
+            self.rw_connected = "running"
+            return
+
+        if self.rw_connected == "running":
+            elapsed = now - (self._rw_started_at or now)
+            connected = float(datastore.read("system.rw_vesc_connected", default=0.0))
+            if connected >= 1.0:
+                logger.info("ActuatorChecks: RW VESC connected — actuator check passed")
+                self.rw_connected = "passed"
+            elif elapsed > _RW_CONNECT_TIMEOUT_S:
+                logger.error("ActuatorChecks: RW VESC not connected after %.1f s", elapsed)
+                self.rw_connected = "failed"
+
 
 class FlightStageTask(BaseTask):
     """
@@ -171,7 +227,8 @@ class FlightStageTask(BaseTask):
         }
 
         self._arm_cmd_pending: bool = False
-        self._preflight_ok_since: float | None = None  # monotonic time when preflight first passed
+        self._preflight_ok_since: float | None = None
+        self._actuator_checks: _ActuatorChecks = _ActuatorChecks()
 
         self._pointing_start_time = None
 
@@ -316,6 +373,7 @@ class FlightStageTask(BaseTask):
                     self._write_flag("arm_checks_ok", 1)
                     self._write_flag("arm_state", 1)
                     self._alt_history.clear()
+                    self._actuator_checks.reset()
                     logger.info("FlightStageTask: arm checks passed — advancing to STAGE_ARMED")
                     return STAGE_ARMED
                 else:
@@ -328,7 +386,14 @@ class FlightStageTask(BaseTask):
                 self._write_flag("launch_initiated", 1)
                 self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH
-            elif self._detect_launch(now, baro_alt):
+
+            self._actuator_checks.run(now, self.datastore)
+
+            if self._actuator_checks.any_failed():
+                logger.warning("FlightStageTask: actuator check failed — resetting and retrying")
+                self._actuator_checks.reset()
+
+            if self._actuator_checks.all_passed():
                 self._write_flag("launch_initiated", 1)
                 self._launch_ok_alt = baro_alt
                 return STAGE_LAUNCH
@@ -426,27 +491,23 @@ class FlightStageTask(BaseTask):
         Verify all hardware is connected and reporting fresh data.
         Returns True only when every check passes.
         """
+        req: FlightStageRequireConfig = self._cfg.require
         failures: list[str] = []
 
-        # MAVLink: attitude data must be arriving
-        mavlink_entry = self.datastore.read_with_timestamp("mavlink.attitude.yaw")
-        if mavlink_entry is None or (now - mavlink_entry[1]) > _MAVLINK_STALENESS_S:
-            failures.append("mavlink_stale")
+        if req.mavlink:
+            mavlink_entry = self.datastore.read_with_timestamp("mavlink.attitude.yaw")
+            if mavlink_entry is None or (now - mavlink_entry[1]) > _MAVLINK_STALENESS_S:
+                failures.append("mavlink_stale")
 
-        # RW VESC: rpm key must exist and be fresh
-        rw_entry = self.datastore.read_with_timestamp("rw.rpm")
-        if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("rw_vesc_missing")
+        if req.rw_vesc:
+            rw_entry = self.datastore.read_with_timestamp("rw.rpm")
+            if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("rw_vesc_missing")
 
-        # MM VESC: rpm key must exist and be fresh — skip if MM task is not running
-        mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("mm_vesc_missing")
-
-        # GPS: module must be responding
-        # gps_active = int(self.datastore.read("gps.active", default=0))
-        # if not gps_active:
-        #     failures.append("gps_not_active")
+        if req.mm_vesc:
+            mm_entry = self.datastore.read_with_timestamp("mm.rpm")
+            if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("mm_vesc_missing")
 
         if failures:
             logger.debug("FlightStageTask: preflight failures: %s", ", ".join(failures))
@@ -459,24 +520,29 @@ class FlightStageTask(BaseTask):
         Returns (all_ok, list_of_failures).
         All checks are non-blocking — evaluated on each execute() cycle.
         """
+        req: FlightStageRequireConfig = self._cfg.require
         failures: list[str] = []
 
-        # GPS fix quality
-        # gps_valid  = int(self.datastore.read("gps.valid",  default=0))
-        # gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
-        # if not gps_valid or gps_num_sv < _GPS_MIN_SV:
-        #     failures.append(f"gps_no_fix(sv={gps_num_sv})")
+        if req.gps:
+            gps_valid  = int(self.datastore.read("gps.valid",  default=0))
+            gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
+            if not gps_valid or gps_num_sv < _GPS_MIN_SV:
+                failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
-        # Neutral orientation — low yaw rate
+        # Neutral orientation — low yaw rate (always required)
         yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
         if yaw_rate > _NEUTRAL_YAW_RATE:
             failures.append(f"yaw_rate_high({yaw_rate:.2f}rad/s)")
 
-        # VESC telemetry freshness (confirms both ESCs are alive and reporting)
-        rw_entry = self.datastore.read_with_timestamp("rw.rpm")
-        if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("rw_vesc_not_reporting")
+        if req.rw_vesc:
+            rw_entry = self.datastore.read_with_timestamp("rw.rpm")
+            if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("rw_vesc_not_reporting")
 
+        if req.mm_vesc:
+            mm_entry = self.datastore.read_with_timestamp("mm.rpm")
+            if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("mm_vesc_not_reporting")
         return len(failures) == 0, failures
 
     def _detect_launch(self, now: float, baro_alt: float) -> bool:

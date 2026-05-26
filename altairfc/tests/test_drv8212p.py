@@ -53,11 +53,11 @@ def main() -> None:
 
     try:
         io = MCP23017()
+        motors = DRV8212P(io)
     except Exception as e:
-        print(f"[ERROR] Failed to open MCP23017: {e}")
+        print(f"[ERROR] Failed to initialise hardware: {e}")
         sys.exit(1)
 
-    motors = DRV8212P(io)
     print("[OK] MCP23017 and DRV8212P initialised")
     print()
     print(HELP)
@@ -91,6 +91,8 @@ def main() -> None:
         motors.coast_all()
         io.close()
         print("[OK] Outputs coasted, I2C bus closed.")
+
+
 
 
 if __name__ == "__main__":
