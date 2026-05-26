@@ -223,8 +223,8 @@ class PointingTask(BaseTask):
     #     self.rw.set_rpm(int(rw_rpm + delta_rpm))
     def _desaturate(self) -> None:
         self.rw.set_rpm(0)
-        self._set_state(PointingState.STABILIZE)
-        self.rw_controller.set_mode("saturated")
+        if time.monotonic() - self._state_started >= 5.0:
+            self._set_state(PointingState.STABILIZE)
     
     def _acceleration(self, yaw_rate: float) -> float:
         self._rate_sum_window.append(yaw_rate)
