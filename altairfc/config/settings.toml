@@ -74,7 +74,7 @@ bypass_launch_altitude_checks = true      # automatically advance ARMED→LAUNCH
 [pointing]
 spinup_rpm = 0.0
 spinup_s = 0.0
-stabilize_yaw_rate = 0.5
+stabilize_yaw_rate = 1.0
 unstable_yaw_rate = 1.0
 stability_threshold = 3.0
 saturation_rpm = 2600.0
