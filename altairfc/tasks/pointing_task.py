@@ -99,10 +99,10 @@ class PointingTask(BaseTask):
             if not stability or time.monotonic() - self._state_started < 10.0:
                 if np.sign(trend) != np.sign(yaw_rate):
                     delta_rpm = self.rw_controller.output(yaw_rate)
-                elif saturated:
-                    delta_rpm = 0.0
+                # elif saturated:
+                #     delta_rpm = 0.0
                 else:
-                    delta_rpm = self.rw_controller.output(yaw_rate)
+                    delta_rpm = 0.0
             else:
                 self._set_state(PointingState.POINTING)
                 delta_rpm = 0.0
@@ -129,13 +129,20 @@ class PointingTask(BaseTask):
         if saturation:
             self._set_state(PointingState.SATURATED)
             return
-        elif abs(yaw) > 0.5:
-            self.rw_controller.set_mode("slewing")
-            err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
-            delta_rpm = self.rw_controller.output(err)
-        else:
-            self.rw_controller.set_mode("pointing")
-            delta_rpm = self.rw_controller.output(yaw, yaw_rate)
+        # elif abs(yaw) > 0.5:
+        #     self.rw_controller.set_mode("slewing")
+        #     err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
+        #     delta_rpm = self.rw_controller.output(err)
+        self.rw_controller.set_mode("pointing")
+        delta_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
+
+        if abs(rw_rpm) > 1500:
+            fraction = (abs(rw_rpm) - 1500) / (self._saturation_rpm - 1500)
+            fraction = np.clip(fraction, 0.0, 1.0)
+
+            unload = -np.sign(rw_rpm) * fraction * 300
+            delta_rpm += unload
+
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
 
             

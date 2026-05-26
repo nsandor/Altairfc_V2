@@ -77,8 +77,8 @@ spinup_s = 0.0
 stabilize_yaw_rate = 0.2
 max_slew_rate = 0.4
 stability_threshold = 3.0
-saturation_rpm = 2900.0
-saturation_s = 10.0
+saturation_rpm = 2800.0
+saturation_s = 5.0
 switch_threshold = 0.2
 yaw_rate_deadband = 0.05
 
@@ -117,8 +117,8 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel.pointing]
-Kp = 400.0
-Kd = 25.0
+Kp = 300.0
+Kd = 40.0
 Ki = 2.25
 max_rpm = 3000.0
 min_rpm = -3000.0
