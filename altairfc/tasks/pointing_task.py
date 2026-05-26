@@ -179,7 +179,7 @@ class PointingTask(BaseTask):
 
         moving_away = (
             abs(yaw) > self._switch_threshold
-            and np.sign(yaw_rate) == np.sign(yaw)
+            and np.sign(yaw_rate) != np.sign(yaw)
             and abs(yaw_rate) > self._yaw_rate_deadband
         )
 
@@ -192,7 +192,7 @@ class PointingTask(BaseTask):
         target = yaw + self._target_offset
 
         moving_toward = (
-            np.sign(yaw_rate) != np.sign(yaw)
+            np.sign(yaw_rate) == np.sign(yaw)
             and abs(yaw_rate) > self._yaw_rate_deadband
         )
 
@@ -208,7 +208,7 @@ class PointingTask(BaseTask):
             if self._hold_count >= 80:
                 self._allow_switch = 1
                 self._target_offset = 0.0
-                self._set_state(PointingState.StABILIZE)
+                self._set_state(PointingState.STABILIZE)
         else:
             self._hold_count = 0
 

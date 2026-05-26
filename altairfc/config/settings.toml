@@ -79,8 +79,8 @@ max_slew_rate = 0.4
 stability_threshold = 3.0
 saturation_rpm = 2900.0
 saturation_s = 10.0
-switch_threshold = 0.26
-yaw_rate_deadband = 0.1
+switch_threshold = 0.2
+yaw_rate_deadband = 0.05
 
 [system]
 log_level = "INFO"
