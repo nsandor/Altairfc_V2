@@ -222,7 +222,7 @@ class PointingTask(BaseTask):
             self._count = 0
         
         self.err = target
-        delta_rpm = self.rw_controller.output(self.err, -yaw_rate)
+        delta_rpm = self.rw_controller.output(self.err, yaw_rate)
 
         self.rw.set_rpm(int(rw_rpm + delta_rpm))
     
