@@ -54,7 +54,8 @@ class PointingTask(BaseTask):
         self._state_started = time.monotonic()
         self._saturated_since = None
         self._stable_since = None
-        self._yaw_rate_window = deque(maxlen=max(5, int(1.0 / self.period)))
+        self._unstable_since = None
+        self._yaw_rate_window = deque(maxlen=max(5, int(0.5 / self.period)))
 
         if self.rw is not None:
             if not self.rw.connect():
@@ -101,11 +102,10 @@ class PointingTask(BaseTask):
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
-        stability = self._is_stable(yaw_rate)
         if saturation:
             self._set_state(PointingState.SATURATED)
             return
-        if not stability:
+        if self._is_unstable(yaw_rate):
             self._set_state(PointingState.STABILIZE)
             return
         rw_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
@@ -131,17 +131,21 @@ class PointingTask(BaseTask):
             return True
         return False
 
+    def _filtered_yaw_rate(self, yaw_rate: float) -> float | None:
+        self._yaw_rate_window.append(yaw_rate)
+
+        if len(self._yaw_rate_window) < self._yaw_rate_window.maxlen:
+            return None
+
+        return float(np.median(self._yaw_rate_window))
+
     def _is_stable(self, yaw_rate: float) -> bool:
         now = time.monotonic()
 
-        self._yaw_rate_window.append(yaw_rate)
-
-        # Wait until the window is populated before trusting the decision.
-        if len(self._yaw_rate_window) < self._yaw_rate_window.maxlen:
+        filtered_yaw_rate = self._filtered_yaw_rate(yaw_rate)
+        if filtered_yaw_rate is None:
             self._stable_since = None
             return False
-
-        filtered_yaw_rate = float(np.median(self._yaw_rate_window))
 
         if abs(filtered_yaw_rate) > self._stabilize_yaw_rate:
             self._stable_since = None
@@ -152,6 +156,23 @@ class PointingTask(BaseTask):
             return False
 
         return (now - self._stable_since) >= self._stability_threshold
+
+    def _is_unstable(self, yaw_rate: float) -> bool:
+        now = time.monotonic()
+
+        filtered_yaw_rate = self._filtered_yaw_rate(yaw_rate)
+        if filtered_yaw_rate is None:
+            return False
+
+        if abs(filtered_yaw_rate) <= self._stabilize_yaw_rate:
+            self._unstable_since = None
+            return False
+
+        if self._unstable_since is None:
+            self._unstable_since = now
+            return False
+
+        return (now - self._unstable_since) >= self._stability_threshold
 
     def _desaturate(self) -> None:
         self.rw.set_rpm(0)
@@ -243,5 +264,7 @@ class PointingTask(BaseTask):
             self._state = state
             self._state_started = time.monotonic()
             self._stable_since = None
+            self._unstable_since = None
             self._saturated_since = None
-            self._yaw_rate_window.clear()
+            if state in (PointingState.IDLE, PointingState.SPINUP, PointingState.SATURATED):
+                self._yaw_rate_window.clear()
