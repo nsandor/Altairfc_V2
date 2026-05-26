@@ -176,7 +176,7 @@ class PointingTask(BaseTask):
         return (now - self._unstable_since) >= self._stability_threshold
 
     def _desaturate(self) -> None:
-        self.rw.set_rpm(0)
+        self.rw.decelerate(0)
         _, _, _, _, _, rw_rpm = self._read()
         if time.monotonic() - self._state_started >= 5.0 and abs(rw_rpm) < 100:
             self._set_state(PointingState.STABILIZE)

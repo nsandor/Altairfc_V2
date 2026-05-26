@@ -11,6 +11,7 @@ class RWDriver:
         self.motor: VESCObject | None = None
         self.connected = False
         self._last_rpm = 0
+        self._desaturation_rate = 100
 
     def connect(self) -> bool:
         try:
@@ -47,9 +48,24 @@ class RWDriver:
             return None
         
     def set_rpm(self, rpm: int) -> None:
-        limited_rpm = np.clip(rpm, -3000, 3000)
+        limited_rpm = int(np.clip(rpm, -3000, 3000))
+        self._last_rpm = limited_rpm
         if self.motor is not None:
-            self.motor.set_rpm(rpm)
+            self.motor.set_rpm(limited_rpm)
+
+    def decelerate(self, rpm: int) -> None:
+        rpm = int(np.clip(rpm, -3000, 3000))
+        delta = self._desaturation_rate
+        if self._last_rpm < rpm:
+            new_rpm = min(self._last_rpm + delta, rpm)
+        elif self._last_rpm > rpm:
+            new_rpm = max(self._last_rpm - delta, rpm)
+        else:
+            new_rpm = rpm
+        new_rpm = int(new_rpm)
+        self._last_rpm = new_rpm
+        if self.motor is not None:
+            self.motor.set_rpm(new_rpm)
 
     def set_current(self, current: int) -> None:
         if self.motor is not None:
