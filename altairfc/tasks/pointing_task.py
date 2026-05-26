@@ -128,7 +128,7 @@ class PointingTask(BaseTask):
         #     err = (np.sign(yaw)*self._max_slew_rate) - yaw_rate
         #     delta_rpm = self.rw_controller.output(err)
         self.rw_controller.set_mode("pointing")
-        delta_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
+        rw_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
 
         self.rw.set_rpm(int(rw_rpm))
 
