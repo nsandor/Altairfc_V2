@@ -4,7 +4,7 @@ import logging
 import time
 from enum import Enum
 import numpy as np
-import deque
+from collections import deque
 from config.settings import ControllerConfig, GroundStationConfig, PointingConfig, SerialPortConfig
 from controls.controller import GainScheduledController
 from controls.error_computation import compute_error
