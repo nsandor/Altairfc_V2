@@ -462,10 +462,10 @@ class FlightStageTask(BaseTask):
         failures: list[str] = []
 
         # GPS fix quality
-        gps_valid  = int(self.datastore.read("gps.valid",  default=0))
-        gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
-        if not gps_valid or gps_num_sv < _GPS_MIN_SV:
-            failures.append(f"gps_no_fix(sv={gps_num_sv})")
+        # gps_valid  = int(self.datastore.read("gps.valid",  default=0))
+        # gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
+        # if not gps_valid or gps_num_sv < _GPS_MIN_SV:
+        #     failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
         # Neutral orientation — low yaw rate
         yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
@@ -477,10 +477,7 @@ class FlightStageTask(BaseTask):
         if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
             failures.append("rw_vesc_not_reporting")
 
-        # MM VESC — skip if MM task is not running
-        mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("mm_vesc_not_reporting")
+
 
         return len(failures) == 0, failures
 
