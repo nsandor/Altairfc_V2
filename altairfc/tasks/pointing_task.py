@@ -130,9 +130,9 @@ class PointingTask(BaseTask):
         if saturation:
             self._set_state(PointingState.SATURATED)
             return
-        elif not stability:
-            self._set_state(PointingState.STABILIZE)
-            return
+        # elif not stability:
+        #     self._set_state(PointingState.STABILIZE)
+        #     return
         elif abs(yaw) > 0.5:
             self.rw_controller.set_mode("slewing")
             err = (-np.sign(yaw)*self._max_slew_rate) - yaw_rate
@@ -212,7 +212,7 @@ class PointingTask(BaseTask):
             if self._hold_count >= 80:
                 self._allow_switch = 1
                 self._target_offset = 0.0
-                self._set_state(PointingState.POINTING)
+                self._set_state(PointingState.StABILIZE)
         else:
             self._hold_count = 0
 
