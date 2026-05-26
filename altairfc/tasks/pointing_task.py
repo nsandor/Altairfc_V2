@@ -167,11 +167,6 @@ class PointingTask(BaseTask):
             return
         
         stable = self._is_stable(yaw_rate)
-        if stable:
-            self._set_state(PointingState.POINTING)
-            return
-
-        below_max_slew = abs(yaw_rate) <= self._max_slew_rate
         within_error_window = abs(yaw) <= self._switch_threshold
         moving_toward_setpoint = (
             abs(yaw) > self._switch_threshold
@@ -179,12 +174,12 @@ class PointingTask(BaseTask):
             and np.sign(yaw_rate) == np.sign(yaw)
         )
 
-        if below_max_slew and (moving_toward_setpoint or within_error_window):
+        if stable and (moving_toward_setpoint or within_error_window):
             self._set_state(PointingState.POINTING)
             return
 
-        self.rw_controller.output(yaw_rate)
-        self.rw.set_rpm(int())
+        rw_cmd = self.rw_controller.output(yaw_rate)
+        self.rw.set_rpm(int(rw_cmd))
 
     
     def _store(self) -> None:
