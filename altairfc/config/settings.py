@@ -53,6 +53,14 @@ class TaskConfig:
 
 
 @dataclass
+class FlightStageRequireConfig:
+    mavlink: bool = True
+    rw_vesc: bool = True
+    mm_vesc: bool = False
+    gps:     bool = False
+
+
+@dataclass
 class FlightStageConfig:
     termination_altitude_m:       float = 25000.0
     burst_altitude_m:             float = 30000.0
@@ -68,6 +76,7 @@ class FlightStageConfig:
     pointing_duration_min:        float = 120.0
     auto_advance:                 bool  = True
     preflight_debounce_s:         float = 5.0
+    require:                      FlightStageRequireConfig = field(default_factory=FlightStageRequireConfig)
 
 
 
@@ -138,6 +147,13 @@ class SystemConfig:
             )
 
         fs_raw = data.get("flight_stage", {})
+        req_raw = fs_raw.get("require", {})
+        require = FlightStageRequireConfig(
+            mavlink=req_raw.get("mavlink", True),
+            rw_vesc=req_raw.get("rw_vesc", True),
+            mm_vesc=req_raw.get("mm_vesc", False),
+            gps=req_raw.get("gps",     False),
+        )
         flight_stage = FlightStageConfig(
             termination_altitude_m=fs_raw.get("termination_altitude_m"),
             burst_altitude_m=fs_raw.get("burst_altitude_m"),
@@ -153,6 +169,7 @@ class SystemConfig:
             pointing_duration_min=fs_raw.get("pointing_duration_min"),
             auto_advance=fs_raw.get("auto_advance", True),
             preflight_debounce_s=fs_raw.get("preflight_debounce_s", 5.0),
+            require=require,
         )
 
         gs_raw = data.get("ground_station", {})

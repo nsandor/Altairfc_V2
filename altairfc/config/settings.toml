@@ -74,6 +74,12 @@ pointing_duration_min         = 120.0     # how long to run motor control after 
 auto_advance                  = true      # automatically advance PREFLIGHT→ARMED without ARM command
 preflight_debounce_s          = 5.0       # seconds preflight checks must pass continuously before auto-arming
 
+[flight_stage.require]
+mavlink   = true    # MAVLink attitude data must be fresh
+rw_vesc   = true    # reaction wheel VESC must be reporting
+mm_vesc   = false   # momentum management VESC must be reporting
+gps       = false   # GPS must have a valid fix before arming
+
 [system]
 log_level = "INFO"
 monitor_interval_s = 5.0

@@ -4,7 +4,7 @@ import logging
 import time
 from collections import deque
 
-from config.settings import FlightStageConfig
+from config.settings import FlightStageConfig, FlightStageRequireConfig
 from core.datastore import DataStore
 from core.task_base import BaseTask
 from typing import TYPE_CHECKING
@@ -412,27 +412,23 @@ class FlightStageTask(BaseTask):
         Verify all hardware is connected and reporting fresh data.
         Returns True only when every check passes.
         """
+        req: FlightStageRequireConfig = self._cfg.require
         failures: list[str] = []
 
-        # MAVLink: attitude data must be arriving
-        mavlink_entry = self.datastore.read_with_timestamp("mavlink.attitude.yaw")
-        if mavlink_entry is None or (now - mavlink_entry[1]) > _MAVLINK_STALENESS_S:
-            failures.append("mavlink_stale")
+        if req.mavlink:
+            mavlink_entry = self.datastore.read_with_timestamp("mavlink.attitude.yaw")
+            if mavlink_entry is None or (now - mavlink_entry[1]) > _MAVLINK_STALENESS_S:
+                failures.append("mavlink_stale")
 
-        # RW VESC: rpm key must exist and be fresh
-        rw_entry = self.datastore.read_with_timestamp("rw.rpm")
-        if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("rw_vesc_missing")
+        if req.rw_vesc:
+            rw_entry = self.datastore.read_with_timestamp("rw.rpm")
+            if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("rw_vesc_missing")
 
-        # MM VESC: rpm key must exist and be fresh — skip if MM task is not running
-        mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("mm_vesc_missing")
-
-        # GPS: module must be responding
-        # gps_active = int(self.datastore.read("gps.active", default=0))
-        # if not gps_active:
-        #     failures.append("gps_not_active")
+        if req.mm_vesc:
+            mm_entry = self.datastore.read_with_timestamp("mm.rpm")
+            if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("mm_vesc_missing")
 
         if failures:
             logger.debug("FlightStageTask: preflight failures: %s", ", ".join(failures))
@@ -445,28 +441,29 @@ class FlightStageTask(BaseTask):
         Returns (all_ok, list_of_failures).
         All checks are non-blocking — evaluated on each execute() cycle.
         """
+        req: FlightStageRequireConfig = self._cfg.require
         failures: list[str] = []
 
-        # GPS fix quality
-        gps_valid  = int(self.datastore.read("gps.valid",  default=0))
-        gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
-        if not gps_valid or gps_num_sv < _GPS_MIN_SV:
-            failures.append(f"gps_no_fix(sv={gps_num_sv})")
+        if req.gps:
+            gps_valid  = int(self.datastore.read("gps.valid",  default=0))
+            gps_num_sv = int(self.datastore.read("gps.num_sv", default=0))
+            if not gps_valid or gps_num_sv < _GPS_MIN_SV:
+                failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
-        # Neutral orientation — low yaw rate
+        # Neutral orientation — low yaw rate (always required)
         yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
         if yaw_rate > _NEUTRAL_YAW_RATE:
             failures.append(f"yaw_rate_high({yaw_rate:.2f}rad/s)")
 
-        # VESC telemetry freshness (confirms both ESCs are alive and reporting)
-        rw_entry = self.datastore.read_with_timestamp("rw.rpm")
-        if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("rw_vesc_not_reporting")
+        if req.rw_vesc:
+            rw_entry = self.datastore.read_with_timestamp("rw.rpm")
+            if rw_entry is None or (now - rw_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("rw_vesc_not_reporting")
 
-        # MM VESC — skip if MM task is not running
-        mm_entry = self.datastore.read_with_timestamp("mm.rpm")
-        if mm_entry is not None and (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
-            failures.append("mm_vesc_not_reporting")
+        if req.mm_vesc:
+            mm_entry = self.datastore.read_with_timestamp("mm.rpm")
+            if mm_entry is None or (now - mm_entry[1]) > _VESC_RPM_TIMEOUT_S:
+                failures.append("mm_vesc_not_reporting")
 
         return len(failures) == 0, failures
 
