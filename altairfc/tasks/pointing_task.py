@@ -157,14 +157,9 @@ class PointingTask(BaseTask):
             return
         
         stable = self._is_stable(yaw_rate)
-        within_error_window = abs(yaw) <= self._switch_threshold
-        moving_toward_setpoint = (
-            abs(yaw) > self._switch_threshold
-            and abs(yaw_rate) > self._yaw_rate_deadband
-            and np.sign(yaw_rate) == np.sign(yaw)
-        )
 
-        if stable and (moving_toward_setpoint or within_error_window):
+
+        if stable:
             self._set_state(PointingState.POINTING)
             return
 
