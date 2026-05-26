@@ -190,7 +190,7 @@ class PointingTask(BaseTask):
             if self._hold_count >= 80:
                 self._allow_switch = 1
                 self._target_offset = 0.0
-                self._set_state(PointingState.STABILIZE)
+                self._set_state(PointingState.POINTING)
         else:
             self._hold_count = 0
 
