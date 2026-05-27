@@ -126,15 +126,15 @@ rate_scale = [0.1, 0.33, 1.0]
 Kp = 10000.0
 Kd = 800.0
 Ki = 0.0
-max_rpm = 3000.0
-min_rpm = 0.0
+max_rpm = 1500.0
+min_rpm = -1500.0
 
 [controller.reaction_wheel.stabilize]
 Kp = 624.0
 Kd = 0.0
 Ki = 0.0
-max_rpm = 3000.0
-min_rpm = 0.0
+max_rpm = 1500.0
+min_rpm = -1500.0
 
 
 
