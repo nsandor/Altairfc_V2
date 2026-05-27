@@ -530,9 +530,9 @@ class FlightStageTask(BaseTask):
                 failures.append(f"gps_no_fix(sv={gps_num_sv})")
 
         # Neutral orientation — low yaw rate (always required)
-        yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
-        if yaw_rate > _NEUTRAL_YAW_RATE:
-            failures.append(f"yaw_rate_high({yaw_rate:.2f}rad/s)")
+        # yaw_rate = abs(float(self.datastore.read("mavlink.attitude.yawspeed", default=999.0)))
+        # if yaw_rate > _NEUTRAL_YAW_RATE:
+        #     failures.append(f"yaw_rate_high({yaw_rate:.2f}rad/s)")
 
         if req.rw_vesc:
             rw_entry = self.datastore.read_with_timestamp("rw.rpm")

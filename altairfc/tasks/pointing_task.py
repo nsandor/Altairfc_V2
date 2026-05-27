@@ -99,7 +99,7 @@ class PointingTask(BaseTask):
     
     def _point(self) -> None:
         self.rw_controller.set_mode("pointing")
-        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
+        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         err = yaw
         # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         # self.datastore.write("pointing.az_error", az_err)
@@ -115,9 +115,9 @@ class PointingTask(BaseTask):
 
         self.rw.set_rpm(int(rpm_cmd))
 
-    def _wrap_hdg(self, hdg: float) -> float:
-        err = (hdg + 180) % 360 - 180
-        return np.deg2rad(err)
+    # def _wrap_hdg(self, hdg: float) -> float:
+    #     err = (hdg + 180) % 360 - 180
+    #     return np.deg2rad(err)
 
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
@@ -184,14 +184,14 @@ class PointingTask(BaseTask):
 
     def _desaturate(self) -> None:
         self.rw.decelerate(1500)
-        _, _, _, _, _, rw_rpm, hdg = self._read()
+        _, _, _, _, _, rw_rpm = self._read()
         if time.monotonic() - self._state_started >= 5.0 and 1400 < abs(rw_rpm) < 1600:
             self._set_state(PointingState.STABILIZE)
     
     def _stabilize(self) -> None:
         self.rw_controller.set_mode("stabilize")
 
-        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
+        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
         # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         # self.datastore.write("pointing.az_error", az_err)
 
@@ -258,8 +258,7 @@ class PointingTask(BaseTask):
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
         yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
         rw_rpm = float(self.datastore.read("rw.rpm", default=0.0))/7
-        hdg = self.datastore.read("mavlink.heading", default=None)
-        return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg
+        return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm
 
     def _check(self):
         if int(self.datastore.read("event.pointing_active", default=0.0)) != 1:
