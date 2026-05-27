@@ -100,10 +100,7 @@ class PointingTask(BaseTask):
     def _point(self) -> None:
         self.rw_controller.set_mode("pointing")
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
-        if hdg is not None:
-            err = self._wrap_hdg(hdg)
-        else:
-            err = yaw
+        err = yaw
         # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         # self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
@@ -195,8 +192,8 @@ class PointingTask(BaseTask):
         self.rw_controller.set_mode("stabilize")
 
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
-        az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
-        self.datastore.write("pointing.az_error", az_err)
+        # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
+        # self.datastore.write("pointing.az_error", az_err)
 
         saturated = self._is_saturated(rw_rpm)
         if saturated:
