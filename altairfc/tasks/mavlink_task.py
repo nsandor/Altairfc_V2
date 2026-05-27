@@ -181,9 +181,12 @@ class MavlinkTask(BaseTask):
 
         elif msg_type == "GPS2_RAW":
             # yaw in cdeg from dual-antenna RTK source; 0 = unavailable, 65535 = no fix yet
-            yaw_cdeg = msg.yaw
-            if yaw_cdeg not in (0, 65535):
-                self.datastore.write("mavlink.heading", f(yaw_cdeg / 1e2))
+            if msg.yaw is not None: 
+                yaw_cdeg = msg.yaw
+                if yaw_cdeg not in (0, 65535):
+                    self.datastore.write("mavlink.heading", f(yaw_cdeg / 1e2))
+            else:
+                logger.info("MavlinkTask: GPS2_RAW message received but yaw is None (not supported by current firmware?)")
 
         elif msg_type == "LOCAL_POSITION_NED":
             # NED frame: z is positive downward, so relative_alt = -z

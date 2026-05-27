@@ -100,7 +100,10 @@ class PointingTask(BaseTask):
     def _point(self) -> None:
         self.rw_controller.set_mode("pointing")
         quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
-        err = self._wrap_hdg(hdg)
+        if hdg is not None:
+            err = self._wrap_hdg(hdg)
+        else:
+            err = yaw
         # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         # self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
@@ -258,7 +261,7 @@ class PointingTask(BaseTask):
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
         yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
         rw_rpm = float(self.datastore.read("rw.rpm", default=0.0))/7
-        hdg = float(self.datastore.read("mavlink.heading", default=0.0))
+        hdg = float(self.datastore.read("mavlink.heading", default=None))
         return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg
 
     def _check(self):
