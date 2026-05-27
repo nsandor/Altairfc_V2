@@ -121,7 +121,9 @@ class PointingTask(BaseTask):
 
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
-        saturated = abs(rw_rpm) >= self._saturation_rpm - self._saturation_margin_rpm
+        upper_saturated = rw_rpm >= self._saturation_rpm - self._saturation_margin_rpm
+        lower_saturated = rw_rpm <= self._saturation_margin_rpm
+        saturated = upper_saturated or lower_saturated
         self.datastore.write("pointing.rw_saturated", 1.0 if saturated else 0.0)
 
         if not saturated:
