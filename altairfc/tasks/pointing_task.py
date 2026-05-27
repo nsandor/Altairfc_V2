@@ -109,9 +109,9 @@ class PointingTask(BaseTask):
         if self._is_unstable(yaw_rate):
             self._set_state(PointingState.STABILIZE)
             return
-        rw_rpm = self.rw_controller.output(yaw, yaw_rate) - 0.1* rw_rpm
+        del_rpm = self.rw_controller.output(yaw, yaw_rate)
 
-        self.rw.set_rpm(int(rw_rpm))
+        self.rw.set_rpm(int(rw_rpm+del_rpm))
 
             
     def _is_saturated(self, rw_rpm: float) -> bool:
