@@ -48,13 +48,12 @@ class RWDriver:
             return None
         
     def set_rpm(self, rpm: int) -> None:
-        limited_rpm = int(np.clip(rpm, 0, 3000))
+        limited_rpm = int(np.clip(rpm, 0, 4000))
         self._last_rpm = limited_rpm
         if self.motor is not None:
             self.motor.set_rpm(limited_rpm)
 
     def decelerate(self, rpm: int) -> None:
-        rpm = int(np.clip(rpm, -3000, 3000))
         delta = self._desaturation_rate
         if self._last_rpm < rpm:
             new_rpm = min(self._last_rpm + delta, rpm)

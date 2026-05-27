@@ -72,12 +72,12 @@ preflight_debounce_s          = 5.0       # seconds preflight checks must pass c
 bypass_launch_altitude_checks = true      # automatically advance ARMED→LAUNCH→ASCENT without altitude gain
 
 [pointing]
-spinup_rpm = 1500.0
+spinup_rpm = 2000.0
 spinup_s = 2.0
 stabilize_yaw_rate = 1.5
 unstable_yaw_rate = 1.0
 stability_threshold = 4.0
-saturation_rpm = 2600.0
+saturation_rpm = 3900.0
 saturation_s = 5.0
 switch_threshold = 0.2
 yaw_rate_deadband = 0.05
@@ -123,18 +123,18 @@ watchdog_s = 30.0 # seconds without GS contact on new channel before rolling bac
 rate_scale = [0.1, 0.33, 1.0]
 
 [controller.reaction_wheel.pointing]
-Kp = 10000.0
-Kd = 800.0
+Kp = 8000.0
+Kd = 624.0
 Ki = 0.0
-max_rpm = 1500.0
-min_rpm = -1500.0
+max_rpm = 2000.0
+min_rpm = -2000.0
 
 [controller.reaction_wheel.stabilize]
 Kp = 624.0
 Kd = 0.0
 Ki = 0.0
-max_rpm = 1500.0
-min_rpm = -1500.0
+max_rpm = 2000.0
+min_rpm = -2000.0
 
 
 

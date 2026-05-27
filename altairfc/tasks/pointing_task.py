@@ -111,7 +111,7 @@ class PointingTask(BaseTask):
             self._set_state(PointingState.STABILIZE)
             return
         self.datastore.write("pointing.heading_error", err)
-        rpm_cmd = self.rw_controller.output(err, yaw_rate) + 1500
+        rpm_cmd = self.rw_controller.output(err, yaw_rate) + 2000
 
         self.rw.set_rpm(int(rpm_cmd))
 
@@ -183,9 +183,9 @@ class PointingTask(BaseTask):
         return (now - self._unstable_since) >= self._stability_threshold
 
     def _desaturate(self) -> None:
-        self.rw.decelerate(1500)
+        self.rw.decelerate(2000)
         _, _, _, _, _, rw_rpm, hdg = self._read()
-        if time.monotonic() - self._state_started >= 5.0 and 1400 < abs(rw_rpm) < 1600:
+        if time.monotonic() - self._state_started >= 5.0 and 1900 < abs(rw_rpm) < 2100:
             self._set_state(PointingState.STABILIZE)
     
     def _stabilize(self) -> None:
@@ -207,7 +207,7 @@ class PointingTask(BaseTask):
             self._set_state(PointingState.POINTING)
             return
 
-        rw_cmd = self.rw_controller.output(yaw_rate) + 1500
+        rw_cmd = self.rw_controller.output(yaw_rate) + 2000
         self.rw.set_rpm(int(rw_cmd))
 
     
