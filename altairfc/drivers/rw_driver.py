@@ -48,7 +48,7 @@ class RWDriver:
             return None
         
     def set_rpm(self, rpm: int) -> None:
-        limited_rpm = int(np.clip(rpm, 0, 4000))
+        limited_rpm = int(np.clip(rpm, 0, 3500))
         self._last_rpm = limited_rpm
         if self.motor is not None:
             self.motor.set_rpm(limited_rpm)
