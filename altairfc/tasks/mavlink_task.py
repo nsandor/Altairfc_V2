@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # MAVLink message types this task subscribes to.
 # GPS_RAW_INT is used instead of GLOBAL_POSITION_INT — PX4 streams it by default.
 # LOCAL_POSITION_NED provides relative altitude (above home) since GPS_RAW_INT omits it.
-_SUBSCRIBED_TYPES = ("ATTITUDE", "GPS_RAW_INT", "LOCAL_POSITION_NED", "SCALED_PRESSURE", "VFR_HUD")
+_SUBSCRIBED_TYPES = ("ATTITUDE", "GPS_RAW_INT", "GPS2_RAW", "LOCAL_POSITION_NED", "SCALED_PRESSURE", "VFR_HUD")
 
 
 class MavlinkTask(BaseTask):
@@ -39,6 +39,7 @@ class MavlinkTask(BaseTask):
         mavlink.gps.relative_alt     (float, m)     — above home, from LOCAL_POSITION_NED (-z)
         mavlink.gps.hdg              (float, deg)   — vehicle heading 0-360, from GPS_RAW_INT
         mavlink.gps.num_sv           (int)          — satellites visible, from GPS_RAW_INT
+        mavlink.heading              (float, deg)   — dual-antenna yaw 0-360, from GPS2_RAW (only written when valid)
         mavlink.environment.press_abs    (float, hPa)  — from SCALED_PRESSURE
         mavlink.environment.press_diff   (float, hPa)
         mavlink.environment.temperature  (float, °C)   — centidegrees converted
@@ -105,6 +106,7 @@ class MavlinkTask(BaseTask):
             (mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE,            20_000),   # 50 Hz
             (mavutil.mavlink.MAVLINK_MSG_ID_ATTITUDE_QUATERNION, 20_000),   # 50 Hz 
             (mavutil.mavlink.MAVLINK_MSG_ID_GPS_RAW_INT,        200_000),   #  5 Hz
+            (mavutil.mavlink.MAVLINK_MSG_ID_GPS2_RAW,           200_000),   #  5 Hz
             (mavutil.mavlink.MAVLINK_MSG_ID_LOCAL_POSITION_NED, 200_000),   #  5 Hz
             (mavutil.mavlink.MAVLINK_MSG_ID_SCALED_PRESSURE,    200_000),   #  5 Hz
             (mavutil.mavlink.MAVLINK_MSG_ID_VFR_HUD,            200_000),   #  5 Hz
@@ -176,6 +178,12 @@ class MavlinkTask(BaseTask):
             self.datastore.write("mavlink.gps.alt", f(msg.alt / 1e3))
             self.datastore.write("mavlink.gps.hdg", f(msg.cog / 1e2))
             self.datastore.write("mavlink.gps.num_sv", int(msg.satellites_visible))
+
+        elif msg_type == "GPS2_RAW":
+            # yaw in cdeg from dual-antenna RTK source; 0 = unavailable, 65535 = no fix yet
+            yaw_cdeg = msg.yaw
+            if yaw_cdeg not in (0, 65535):
+                self.datastore.write("mavlink.heading", f(yaw_cdeg / 1e2))
 
         elif msg_type == "LOCAL_POSITION_NED":
             # NED frame: z is positive downward, so relative_alt = -z
