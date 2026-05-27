@@ -236,10 +236,24 @@ class LocalGpsPacket:
     num_sv:      int   = 0
 
 
+@dataclass
+class PointingPacket:
+    """Packet ID 0x0A — pointing state (heading error, az error, RW saturation, GPS2 heading)."""
+    PACKET_ID:    ClassVar[int]          = 0x0A
+    STRUCT_FMT:   ClassVar[struct.Struct] = struct.Struct("<ffff")
+    FIELD_NAMES:  ClassVar[tuple]        = ("heading_error", "az_error", "rw_saturated", "heading")
+    UNITS:        ClassVar[tuple]        = ("deg", "rad", "", "deg")
+
+    heading_error: float = 0.0
+    az_error:      float = 0.0
+    rw_saturated:  float = 0.0
+    heading:       float = 0.0
+
+
 # Registry: packet_id -> class
 _PACKET_REGISTRY: dict[int, type] = {
     cls.PACKET_ID: cls
-    for cls in (HeartbeatPacket, AttitudePacket, PowerPacket, VescPacket, PhotodiodePacket, FlightSettingsPacket, LocalGpsPacket)
+    for cls in (HeartbeatPacket, AttitudePacket, PowerPacket, VescPacket, PhotodiodePacket, FlightSettingsPacket, LocalGpsPacket, PointingPacket)
 }
 
 # ---------------------------------------------------------------------------
