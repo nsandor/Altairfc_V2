@@ -111,7 +111,7 @@ class PointingTask(BaseTask):
             self._set_state(PointingState.STABILIZE)
             return
         self.datastore.write("pointing.heading_error", err)
-        rpm_cmd = self.rw_controller.output(hdg) + 1500
+        rpm_cmd = self.rw_controller.output(err) + 1500
 
         self.rw.set_rpm(int(rpm_cmd))
 
