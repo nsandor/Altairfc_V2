@@ -99,9 +99,9 @@ class PointingTask(BaseTask):
     
     def _point(self) -> None:
         self.rw_controller.set_mode("pointing")
-        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
-        az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
-        self.datastore.write("pointing.az_error", az_err)
+        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
+        # az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
+        # self.datastore.write("pointing.az_error", az_err)
         saturation = self._is_saturated(rw_rpm)
         if saturation:
             self._set_state(PointingState.SATURATED)
@@ -177,14 +177,14 @@ class PointingTask(BaseTask):
 
     def _desaturate(self) -> None:
         self.rw.decelerate(0)
-        _, _, _, _, _, rw_rpm = self._read()
+        _, _, _, _, _, rw_rpm, hdg = self._read()
         if time.monotonic() - self._state_started >= 5.0 and abs(rw_rpm) < 100:
             self._set_state(PointingState.STABILIZE)
     
     def _stabilize(self) -> None:
         self.rw_controller.set_mode("stabilize")
 
-        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm = self._read()
+        quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg = self._read()
         az_err, _ = compute_error(quat, pos, gs_coords=gs_pos)
         self.datastore.write("pointing.az_error", az_err)
 
@@ -251,8 +251,9 @@ class PointingTask(BaseTask):
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
         yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
         rw_rpm = float(self.datastore.read("rw.rpm", default=0.0))/7
-        return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm
-    
+        hdg = float(self.datastore.read("mavlink.heading", default=0.0))
+        return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg
+
     def _check(self):
         if int(self.datastore.read("event.pointing_active", default=0.0)) != 1:
             logger.info("PointingTask: run duration elapsed — stopping motor")
