@@ -117,7 +117,7 @@ class PointingTask(BaseTask):
 
     def _wrap_hdg(self, hdg: float) -> float:
         err = (hdg + 180) % 360 - 180
-        return err
+        return np.deg2rad(err)
 
     def _is_saturated(self, rw_rpm: float) -> bool:
         now = time.monotonic()
