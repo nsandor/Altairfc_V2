@@ -261,7 +261,7 @@ class PointingTask(BaseTask):
         yaw_rate = float(self.datastore.read("mavlink.attitude.yawspeed", default=0.0))
         yaw = float(self.datastore.read("mavlink.attitude.yaw", default=0.0))
         rw_rpm = float(self.datastore.read("rw.rpm", default=0.0))/7
-        hdg = float(self.datastore.read("mavlink.heading", default=None))
+        hdg = self.datastore.read("mavlink.heading", default=None)
         return quat, pos, gs_pos, yaw_rate, yaw, rw_rpm, hdg
 
     def _check(self):
