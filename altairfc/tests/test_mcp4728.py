@@ -17,6 +17,7 @@ Usage:
     python tests/test_mcp4728.py [--bus /dev/i2c-1] [--address 0x60] [--vdd 3.3]
     python tests/test_mcp4728.py --sweep 1              # sweep channel 1, Ctrl+C to stop
     python tests/test_mcp4728.py --no-ldac              # don't touch LDAC (e.g. if tied to GND)
+    python tests/test_mcp4728.py --zero-eeprom          # persist 0V on all channels, survives power cycles
 
 Checks performed:
     1. Device responds at the given address
@@ -51,6 +52,12 @@ _FAST_WRITE_HEADER = 0x00
 # Multi-Write command byte per channel: 0b01000_AAA_0 where AAA selects
 # the channel (0=A..3=D); the trailing bit is UDAC (0 = update immediately).
 _MULTIWRITE_CMD = 0x40
+
+# Sequential Write command byte: 0b01010_000 — writes DAC reg + EEPROM for
+# all 4 channels starting at channel A, in one block transaction.
+_SEQWRITE_CMD = 0x50
+
+EEPROM_WRITE_S = 0.05  # datasheet: EEPROM write takes up to ~50 ms
 
 
 class Ldac:
@@ -134,6 +141,32 @@ def multi_write_all(bus, addr, codes, vref_vdd=True, gain=1):
         upper = (vref_bit << 7) | (0 << 5) | (gain_bit << 4) | ((code >> 8) & 0x0F)
         lower = code & 0xFF
         bus.write_i2c_block_data(addr, cmd, [upper, lower])
+
+
+def sequential_write_eeprom_all(bus, addr, codes, vref_vdd=True, gain=1):
+    """
+    Write all 4 channels' DAC register AND EEPROM in one Sequential Write
+    transaction, starting at channel A. Unlike Multi-Write/Fast Write, this
+    persists across power cycles — the chip will power up outputting these
+    codes (with this Vref/gain) every time, with no software write needed.
+
+    Blocks ~50 ms while the EEPROM write completes, per the datasheet.
+    """
+    if len(codes) != 4:
+        raise ValueError("codes must have exactly 4 entries (A, B, C, D)")
+
+    vref_bit = 0 if vref_vdd else 1
+    gain_bit = 1 if gain == 2 else 0
+
+    payload = []
+    for code in codes:
+        code = max(0, min(MAX_CODE, code))
+        upper = (vref_bit << 7) | (0 << 5) | (gain_bit << 4) | ((code >> 8) & 0x0F)
+        lower = code & 0xFF
+        payload.extend([upper, lower])
+
+    bus.write_i2c_block_data(addr, _SEQWRITE_CMD, payload)
+    time.sleep(EEPROM_WRITE_S)
 
 
 def read_input_registers(bus, addr):
@@ -257,6 +290,34 @@ def _open_ldac(args):
         sys.exit(1)
 
 
+def zero_eeprom_all(bus, addr):
+    """
+    Persist code=0, Vref=Vdd, gain=1x on all 4 channels to EEPROM, so the
+    chip powers up outputting 0V on every channel with no software write
+    needed. Confirms via readback before reporting success.
+    """
+    print(f"Writing 0V (code 0, Vref=Vdd) to EEPROM on all 4 channels at 0x{addr:02X}...")
+    sequential_write_eeprom_all(bus, addr, [0, 0, 0, 0], vref_vdd=True, gain=1)
+
+    readback = read_input_registers(bus, addr)
+    flags = read_channel_flags(bus, addr)
+    ok = True
+    for ch in range(4):
+        code_ok = readback[ch] == 0
+        vref_ok = flags[ch]["vref"] == 0
+        chan_ok = code_ok and vref_ok
+        ok = ok and chan_ok
+        flag = "OK" if chan_ok else "FAIL"
+        print(f"  [{flag}] CH{chr(ord('A') + ch)}: code={readback[ch]}, "
+              f"vref={'Vdd' if flags[ch]['vref'] == 0 else 'internal'}")
+
+    if ok:
+        print("[OK] All 4 channels persisted to EEPROM at 0V — will hold across power cycles")
+    else:
+        print("[FAIL] EEPROM write did not take on one or more channels")
+    return ok
+
+
 def main():
     parser = argparse.ArgumentParser(description="MCP4728 hardware verification")
     parser.add_argument("--bus", default="/dev/i2c-1", help="I2C device node")
@@ -268,6 +329,9 @@ def main():
                          help="BCM pin driving LDAC (default: 20 / physical pin 38)")
     parser.add_argument("--no-ldac", action="store_true",
                          help="Don't drive LDAC (use if it's hardwired to GND)")
+    parser.add_argument("--zero-eeprom", action="store_true",
+                         help="Persist 0V (code 0, Vref=Vdd) to EEPROM on all 4 channels "
+                              "so it survives power cycles, then exit")
     args = parser.parse_args()
 
     addr = int(args.address, 0)
@@ -283,6 +347,12 @@ def main():
         sys.exit(1)
 
     ldac = _open_ldac(args)
+
+    if args.zero_eeprom:
+        ok = zero_eeprom_all(bus, addr)
+        ldac.close()
+        bus.close()
+        sys.exit(0 if ok else 1)
 
     if args.sweep is not None:
         sweep_channel(bus, addr, args.sweep, args.vdd)
