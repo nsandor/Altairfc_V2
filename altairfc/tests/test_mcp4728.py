@@ -4,9 +4,20 @@ MCP4728 hardware verification script.
 Runs directly on the Pi with the MCP4728 quad DAC wired at I2C address 0x60.
 Uses smbus2 directly — no driver module required.
 
+LDAC (BCM 20 / physical pin 38) must be driven LOW for I2C writes to reach
+the analog outputs immediately; while LDAC is HIGH, writes only update the
+DAC input registers and VOUT keeps holding its previously latched value.
+This script drives LDAC itself via pigpio (see --ldac-pin / --no-ldac).
+
+NOTE: BCM 20 is also used by tests/test_led_on.py and tests/test_leds.py to
+drive an LDD-700LS LED driver. If both the LED driver and the MCP4728 LDAC
+pin are wired to BCM 20 at the same time, driving it for one will affect the
+other — confirm the physical wiring before running this alongside LED tests.
+
 Usage:
     python tests/test_mcp4728.py [--bus /dev/i2c-1] [--address 0x60] [--vdd 3.3]
     python tests/test_mcp4728.py --sweep 1              # sweep channel 1, Ctrl+C to stop
+    python tests/test_mcp4728.py --no-ldac              # don't touch LDAC (e.g. if tied to GND)
 
 Checks performed:
     1. Device responds at the given address
@@ -28,10 +39,49 @@ import time
 DEFAULT_ADDR = 0x60
 DEFAULT_BUS  = 1
 MAX_CODE     = 4095
+DEFAULT_LDAC_PIN = 20  # BCM numbering, physical pin 38
 
 # Fast-Write command: 2 bytes per channel, sent in one block starting at
 # channel A. Upper byte bits: 0 0 VREF PD1 PD0 D11 D10 D9, lower byte: D7-D0.
 _FAST_WRITE_HEADER = 0x00
+
+
+class Ldac:
+    """
+    Drives the LDAC pin via pigpio so writes actually reach VOUT.
+
+    LDAC is active-low: pull it low to latch input registers to the
+    analog outputs, leave it high to hold the previous output regardless
+    of new I2C writes.
+    """
+
+    def __init__(self, pin, enabled):
+        self._pin = pin
+        self._enabled = enabled
+        self._pi = None
+        if not enabled:
+            return
+
+        import pigpio
+        self._pi = pigpio.pi()
+        if not self._pi.connected:
+            raise RuntimeError("Cannot connect to pigpio daemon. Run: sudo pigpiod")
+        self._pi.set_mode(pin, pigpio.OUTPUT)
+        self._pi.write(pin, 0)  # idle low: outputs track input registers directly
+        print(f"[INFO] LDAC (BCM {pin}) held LOW — outputs will update immediately on write")
+
+    def pulse(self):
+        """Toggle LDAC high->low to force-latch, for use if it's normally held high elsewhere."""
+        if not self._enabled:
+            return
+        self._pi.write(self._pin, 1)
+        time.sleep(0.001)
+        self._pi.write(self._pin, 0)
+
+    def close(self):
+        if self._enabled and self._pi is not None:
+            self._pi.write(self._pin, 0)
+            self._pi.stop()
 
 
 def fast_write_all(bus, addr, codes):
@@ -66,6 +116,27 @@ def read_input_registers(bus, addr):
         code = ((upper & 0x0F) << 8) | lower
         codes.append(code)
     return codes
+
+
+def read_channel_flags(bus, addr):
+    """
+    Decode VREF/PD/GAIN bits from the DAC (input) register of each channel,
+    to diagnose whether Fast Write actually selected Vdd vs internal Vref.
+
+    Upper byte of the DAC register: [RDY/BSY][POR][x][x][VREF][PD1][PD0][GX]
+    Note: DAC register upper byte layout (read form) differs slightly from
+    the write-form byte — bit 7/6 are RDY/BSY and POR flags when reading.
+    """
+    raw = bus.read_i2c_block_data(addr, 0x00, 24)
+    flags = []
+    for ch in range(4):
+        base = ch * 6
+        upper = raw[base + 1]
+        vref = (upper >> 3) & 0x01
+        pd   = (upper >> 1) & 0x03
+        gain = upper & 0x01
+        flags.append({"vref": vref, "pd": pd, "gain": gain})
+    return flags
 
 
 def check_device_present(bus, addr):
@@ -126,6 +197,14 @@ def sweep_channel(bus, addr, channel, vdd):
         print("\nDone")
 
 
+def _open_ldac(args):
+    try:
+        return Ldac(args.ldac_pin, enabled=not args.no_ldac)
+    except RuntimeError as e:
+        print(f"[FAIL] {e}")
+        sys.exit(1)
+
+
 def main():
     parser = argparse.ArgumentParser(description="MCP4728 hardware verification")
     parser.add_argument("--bus", default="/dev/i2c-1", help="I2C device node")
@@ -133,6 +212,10 @@ def main():
     parser.add_argument("--vdd", default=3.3, type=float, help="Supply voltage for Vout estimate")
     parser.add_argument("--sweep", type=int, choices=[0, 1, 2, 3], default=None,
                          help="Instead of checks, continuously sweep one channel (0-3 = A-D)")
+    parser.add_argument("--ldac-pin", type=int, default=DEFAULT_LDAC_PIN,
+                         help="BCM pin driving LDAC (default: 20 / physical pin 38)")
+    parser.add_argument("--no-ldac", action="store_true",
+                         help="Don't drive LDAC (use if it's hardwired to GND)")
     args = parser.parse_args()
 
     addr = int(args.address, 0)
@@ -147,8 +230,11 @@ def main():
         print(f"[FAIL] Could not open {args.bus}: {e}")
         sys.exit(1)
 
+    ldac = _open_ldac(args)
+
     if args.sweep is not None:
         sweep_channel(bus, addr, args.sweep, args.vdd)
+        ldac.close()
         bus.close()
         sys.exit(0)
 
@@ -158,12 +244,14 @@ def main():
     results.append(check_device_present(bus, addr))
     if not results[-1]:
         print("\nDevice not found, aborting.")
+        ldac.close()
         bus.close()
         sys.exit(1)
 
     results.append(check_roundtrip(bus, addr))
     results.append(check_midscale(bus, addr, args.vdd))
 
+    ldac.close()
     bus.close()
 
     print(f"\n=== Results: {sum(results)}/{len(results)} checks passed ===")
