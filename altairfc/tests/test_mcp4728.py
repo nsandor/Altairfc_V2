@@ -16,6 +16,7 @@ hardware, so BCM 20 is now dedicated to LDAC.
 Usage:
     python tests/test_mcp4728.py [--bus /dev/i2c-1] [--address 0x60] [--vdd 3.3]
     python tests/test_mcp4728.py --sweep 1              # sweep channel 1, Ctrl+C to stop
+    python tests/test_mcp4728.py --hold 0 --code 2047   # hold channel A at code 2047, Ctrl+C to stop
     python tests/test_mcp4728.py --no-ldac              # don't touch LDAC (e.g. if tied to GND)
     python tests/test_mcp4728.py --zero-eeprom          # persist 0V on all channels, survives power cycles
 
@@ -282,6 +283,32 @@ def sweep_channel(bus, addr, channel, vdd):
         print("\nDone")
 
 
+def hold_value(bus, addr, channel, code, vdd):
+    """
+    Write a single known code to one channel (forcing Vref=Vdd, gain=1x via
+    Multi-Write) and hold it there until Ctrl+C. Other channels are left at 0.
+    Useful for parking a meter/scope on VOUT and confirming the value is
+    stable and doesn't drift or reset on its own. On Ctrl+C, resets that
+    channel back to 0V before exiting.
+    """
+    codes = [0, 0, 0, 0]
+    codes[channel] = code
+    multi_write_all(bus, addr, codes, vref_vdd=True, gain=1)
+
+    expected_v = vdd * code / MAX_CODE
+    print(f"Holding CH{chr(ord('A') + channel)} at code {code} "
+          f"(~{expected_v:.3f} V with Vdd={vdd} V), Ctrl+C to stop")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        codes[channel] = 0
+        fast_write_all(bus, addr, codes)
+        print("\nDone — CH%s reset to 0V" % chr(ord('A') + channel))
+
+
 def _open_ldac(args):
     try:
         return Ldac(args.ldac_pin, enabled=not args.no_ldac)
@@ -325,6 +352,11 @@ def main():
     parser.add_argument("--vdd", default=3.3, type=float, help="Supply voltage for Vout estimate")
     parser.add_argument("--sweep", type=int, choices=[0, 1, 2, 3], default=None,
                          help="Instead of checks, continuously sweep one channel (0-3 = A-D)")
+    parser.add_argument("--hold", type=int, choices=[0, 1, 2, 3], default=None,
+                         help="Instead of checks, write --code to one channel (0-3 = A-D) "
+                              "and hold it there until Ctrl+C (other channels set to 0)")
+    parser.add_argument("--code", type=int, default=MAX_CODE // 2,
+                         help="12-bit DAC code (0-4095) to use with --hold (default: mid-scale)")
     parser.add_argument("--ldac-pin", type=int, default=DEFAULT_LDAC_PIN,
                          help="BCM pin driving LDAC (default: 20 / physical pin 38)")
     parser.add_argument("--no-ldac", action="store_true",
@@ -353,6 +385,12 @@ def main():
         ldac.close()
         bus.close()
         sys.exit(0 if ok else 1)
+
+    if args.hold is not None:
+        hold_value(bus, addr, args.hold, args.code, args.vdd)
+        ldac.close()
+        bus.close()
+        sys.exit(0)
 
     if args.sweep is not None:
         sweep_channel(bus, addr, args.sweep, args.vdd)
