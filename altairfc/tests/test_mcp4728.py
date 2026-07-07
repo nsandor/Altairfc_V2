@@ -19,6 +19,8 @@ Usage:
     python tests/test_mcp4728.py --hold 0 --code 2047   # hold channel A at code 2047, Ctrl+C to stop
     python tests/test_mcp4728.py --no-ldac              # don't touch LDAC (e.g. if tied to GND)
     python tests/test_mcp4728.py --zero-eeprom          # persist 0V on all channels, survives power cycles
+    python tests/test_mcp4728.py --save-eeprom --code 2047            # persist mid-scale on all 4 channels
+    python tests/test_mcp4728.py --save-eeprom --code 0 --code-a 1024 # all channels 0V except A=1024
 
 Checks performed:
     1. Device responds at the given address
@@ -317,29 +319,30 @@ def _open_ldac(args):
         sys.exit(1)
 
 
-def zero_eeprom_all(bus, addr):
+def save_eeprom_all(bus, addr, codes, vdd):
     """
-    Persist code=0, Vref=Vdd, gain=1x on all 4 channels to EEPROM, so the
-    chip powers up outputting 0V on every channel with no software write
+    Persist the given codes, Vref=Vdd, gain=1x on all 4 channels to EEPROM,
+    so the chip powers up outputting these voltages with no software write
     needed. Confirms via readback before reporting success.
     """
-    print(f"Writing 0V (code 0, Vref=Vdd) to EEPROM on all 4 channels at 0x{addr:02X}...")
-    sequential_write_eeprom_all(bus, addr, [0, 0, 0, 0], vref_vdd=True, gain=1)
+    print(f"Writing power-on defaults to EEPROM on all 4 channels at 0x{addr:02X}...")
+    sequential_write_eeprom_all(bus, addr, codes, vref_vdd=True, gain=1)
 
     readback = read_input_registers(bus, addr)
     flags = read_channel_flags(bus, addr)
     ok = True
     for ch in range(4):
-        code_ok = readback[ch] == 0
+        code_ok = readback[ch] == codes[ch]
         vref_ok = flags[ch]["vref"] == 0
         chan_ok = code_ok and vref_ok
         ok = ok and chan_ok
         flag = "OK" if chan_ok else "FAIL"
-        print(f"  [{flag}] CH{chr(ord('A') + ch)}: code={readback[ch]}, "
+        expected_v = vdd * codes[ch] / MAX_CODE
+        print(f"  [{flag}] CH{chr(ord('A') + ch)}: code={readback[ch]} (~{expected_v:.3f} V), "
               f"vref={'Vdd' if flags[ch]['vref'] == 0 else 'internal'}")
 
     if ok:
-        print("[OK] All 4 channels persisted to EEPROM at 0V — will hold across power cycles")
+        print("[OK] All 4 channels persisted to EEPROM — will hold across power cycles")
     else:
         print("[FAIL] EEPROM write did not take on one or more channels")
     return ok
@@ -364,6 +367,17 @@ def main():
     parser.add_argument("--zero-eeprom", action="store_true",
                          help="Persist 0V (code 0, Vref=Vdd) to EEPROM on all 4 channels "
                               "so it survives power cycles, then exit")
+    parser.add_argument("--save-eeprom", action="store_true",
+                         help="Persist --code (or --code-a/b/c/d) to EEPROM as the new "
+                              "power-on default (Vref=Vdd) on all 4 channels, then exit")
+    parser.add_argument("--code-a", type=int, default=None,
+                         help="Per-channel override for --save-eeprom (defaults to --code)")
+    parser.add_argument("--code-b", type=int, default=None,
+                         help="Per-channel override for --save-eeprom (defaults to --code)")
+    parser.add_argument("--code-c", type=int, default=None,
+                         help="Per-channel override for --save-eeprom (defaults to --code)")
+    parser.add_argument("--code-d", type=int, default=None,
+                         help="Per-channel override for --save-eeprom (defaults to --code)")
     args = parser.parse_args()
 
     addr = int(args.address, 0)
@@ -381,7 +395,15 @@ def main():
     ldac = _open_ldac(args)
 
     if args.zero_eeprom:
-        ok = zero_eeprom_all(bus, addr)
+        ok = save_eeprom_all(bus, addr, [0, 0, 0, 0], args.vdd)
+        ldac.close()
+        bus.close()
+        sys.exit(0 if ok else 1)
+
+    if args.save_eeprom:
+        per_channel = [args.code_a, args.code_b, args.code_c, args.code_d]
+        codes = [args.code if c is None else c for c in per_channel]
+        ok = save_eeprom_all(bus, addr, codes, args.vdd)
         ldac.close()
         bus.close()
         sys.exit(0 if ok else 1)
