@@ -1,16 +1,17 @@
 """
 Photodiode TIA + thermistor bridge ADC verification script.
 
-Two ADS1220 24-bit delta-sigma ADCs share the Pi's SPI0 bus (SCLK/MOSI/MISO)
-but each has its own chip-select driven manually via pigpio (neither uses
-the hardware CE0/CE1 pins):
+Two identical ADS1220 24-bit delta-sigma ADC breakouts share the Pi's SPI0
+bus (SCLK/MOSI/MISO) but each has its own chip-select driven manually via
+pigpio (neither uses the hardware CE0/CE1 pins):
 
-    ADC1 (photodiode TIA):   CS = GPIO4
-    ADC2 (thermistor bridge): CS = GPIO17
+    ADC1: CS = GPIO4
+    ADC2: CS = GPIO17
 
-ADC1 reads the photodiode TIA output on AIN0, single-ended vs AVSS.
-ADC2 reads a Wheatstone bridge (R3/R4/TH1/R5, all nominally 10k, TH1 is the
-NTC thermistor) differentially: AIN2(+) - AIN3(-).
+Each ADC independently reads BOTH inputs on its own breakout:
+    - Photodiode TIA output on AIN0, single-ended vs AVSS
+    - Thermistor Wheatstone bridge (R3/R4/TH1/R5, all nominally 10k, TH1 is
+      the NTC thermistor) differentially: AIN2(+) - AIN3(-)
 
 Thermistor: NCU18XH103F60RB, R25=10000 ohm +-1%, B25/50=3380K +-1%.
 
@@ -20,11 +21,13 @@ Usage:
     python tests/test_photodiode_adc.py
     python tests/test_photodiode_adc.py --samples 10
     python tests/test_photodiode_adc.py --stream          # continuous read, Ctrl+C to stop
+    python tests/test_photodiode_adc.py --only 1          # test only ADC1 (CS=GPIO4)
+    python tests/test_photodiode_adc.py --only 2          # test only ADC2 (CS=GPIO17)
 
-Checks performed:
-    1. Both ADCs respond (config register write/read round-trip)
-    2. N consecutive samples from each ADC: values finite, DRDY behaves,
-       no SPI errors
+Checks performed, per ADC:
+    1. ADC responds (config register write/read round-trip) for both the
+       photodiode (AIN0) mux setting and the bridge (AIN2-AIN3) mux setting
+    2. N consecutive samples on each input: values finite, no SPI errors
     3. Thermistor bridge sample converted to resistance and temperature
 
 NOTE: Command bytes, register bit layouts, and MUX codes were verified
@@ -230,30 +233,59 @@ def bridge_extra(volts):
     return f"TH1={r:8.1f} ohm  T={t_c:6.2f} C"
 
 
-def stream(adc_pd, adc_bridge):
-    print("Streaming photodiode (AIN0) and thermistor bridge (AIN2-AIN3), Ctrl+C to stop")
+def read_photodiode(adc):
+    """Switch mux to AIN0 single-ended and take one reading."""
+    adc.configure(mux=MUX_AIN0_AVSS, gain=GAIN_1X, pga_bypass=PGA_BYPASS)
+    code = adc.read_single_shot()
+    return code_to_volts(code)
+
+
+def read_bridge(adc):
+    """Switch mux to AIN2-AIN3 differential and take one reading."""
+    adc.configure(mux=MUX_AIN2_AIN3_DIFF, gain=GAIN_1X, pga_bypass=PGA_ENABLED)
+    code = adc.read_single_shot()
+    return code_to_volts(code)
+
+
+def stream(adcs):
+    print("Streaming photodiode (AIN0) and thermistor bridge (AIN2-AIN3) on each ADC, Ctrl+C to stop")
     try:
         while True:
-            pd_code = adc_pd.read_single_shot()
-            pd_v = code_to_volts(pd_code)
-
-            br_code = adc_bridge.read_single_shot()
-            br_v = code_to_volts(br_code)
-            r = bridge_volts_to_resistance(br_v)
-            t_c = resistance_to_celsius(r)
-
-            print(f"PD: {pd_v:+.6f} V   |   Bridge: {br_v:+.6f} V  "
-                  f"TH1={r:8.1f} ohm  T={t_c:6.2f} C")
+            parts = []
+            for name, adc in adcs:
+                pd_v = read_photodiode(adc)
+                br_v = read_bridge(adc)
+                r = bridge_volts_to_resistance(br_v)
+                t_c = resistance_to_celsius(r)
+                parts.append(f"{name}: PD={pd_v:+.6f} V  Bridge={br_v:+.6f} V  "
+                              f"TH1={r:8.1f} ohm  T={t_c:6.2f} C")
+            print("   |   ".join(parts))
     except KeyboardInterrupt:
         print("\nDone")
 
 
+def open_adc(spidev_mod, pi, spi_bus, spi_speed, cs_pin):
+    spi = spidev_mod.SpiDev()
+    spi.open(spi_bus, 0)
+    spi.max_speed_hz = spi_speed
+    spi.mode = 0b01  # ADS1220: CPOL=0, CPHA=1
+    spi.no_cs = True  # CS is manual via pigpio; don't also toggle hardware CE0
+    adc = Ads1220(spi, pi, cs_pin)
+    adc.reset()
+    return adc, spi
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Photodiode TIA + thermistor bridge ADC verification")
+    parser = argparse.ArgumentParser(
+        description="Photodiode TIA + thermistor bridge ADC verification "
+                     "(two identical ADS1220 breakouts, each reads both inputs)")
     parser.add_argument("--spi-bus", type=int, default=0, help="SPI bus number")
     parser.add_argument("--spi-speed", type=int, default=1_000_000, help="SPI clock speed (Hz)")
-    parser.add_argument("--cs-photodiode", type=int, default=4, help="BCM pin for photodiode ADC CS")
-    parser.add_argument("--cs-bridge", type=int, default=17, help="BCM pin for bridge ADC CS")
+    parser.add_argument("--cs1", type=int, default=4, help="BCM pin for ADC1 CS")
+    parser.add_argument("--cs2", type=int, default=17, help="BCM pin for ADC2 CS")
+    parser.add_argument("--only", type=int, choices=[1, 2], default=None,
+                         help="Test only ADC1 (--cs1) or only ADC2 (--cs2), "
+                              "useful for isolating a hardware fault to one board")
     parser.add_argument("--samples", type=int, default=5, help="Number of read samples")
     parser.add_argument("--stream", action="store_true", help="Continuously stream both channels, Ctrl+C to stop")
     args = parser.parse_args()
@@ -282,67 +314,49 @@ def main():
     # spidev handle only supplies clock/data timing, and _xfer() on each
     # Ads1220 instance gates its own CS pin around every transaction so
     # the two chips never see each other's traffic.
-    spi_pd = spidev.SpiDev()
-    spi_bridge = spidev.SpiDev()
-    try:
-        spi_pd.open(args.spi_bus, 0)
-        spi_pd.max_speed_hz = args.spi_speed
-        spi_pd.mode = 0b01  # ADS1220: CPOL=0, CPHA=1
-        spi_pd.no_cs = True  # CS is manual via pigpio; don't also toggle hardware CE0
+    boards = []
+    if args.only in (None, 1):
+        adc1, spi1 = open_adc(spidev, pi, args.spi_bus, args.spi_speed, args.cs1)
+        boards.append((f"ADC1 (CS=GPIO{args.cs1})", adc1, spi1))
+    if args.only in (None, 2):
+        adc2, spi2 = open_adc(spidev, pi, args.spi_bus, args.spi_speed, args.cs2)
+        boards.append((f"ADC2 (CS=GPIO{args.cs2})", adc2, spi2))
 
-        spi_bridge.open(args.spi_bus, 0)
-        spi_bridge.max_speed_hz = args.spi_speed
-        spi_bridge.mode = 0b01
-        spi_bridge.no_cs = True
-    except Exception as e:
-        print(f"[FAIL] Could not open SPI bus {args.spi_bus}: {e}")
-        pi.stop()
-        sys.exit(1)
-
-    adc_pd = Ads1220(spi_pd, pi, args.cs_photodiode)
-    adc_bridge = Ads1220(spi_bridge, pi, args.cs_bridge)
-
-    adc_pd.reset()
-    adc_bridge.reset()
     time.sleep(0.01)
 
-    if args.stream:
-        adc_pd.configure(mux=MUX_AIN0_AVSS, gain=GAIN_1X, pga_bypass=PGA_BYPASS)
-        adc_bridge.configure(mux=MUX_AIN2_AIN3_DIFF, gain=GAIN_1X, pga_bypass=PGA_ENABLED)
-        stream(adc_pd, adc_bridge)
-        adc_pd.close()
-        adc_bridge.close()
-        spi_pd.close()
-        spi_bridge.close()
+    def cleanup():
+        for _, adc, spi in boards:
+            adc.close()
+            spi.close()
         pi.stop()
+
+    if args.stream:
+        stream([(name, adc) for name, adc, _ in boards])
+        cleanup()
         sys.exit(0)
 
-    print(f"=== Photodiode/thermistor ADC verification "
-          f"(PD CS=GPIO{args.cs_photodiode}, Bridge CS=GPIO{args.cs_bridge}) ===\n")
+    print(f"=== Photodiode/thermistor ADC verification ({len(boards)} board(s)) ===\n")
 
     results = []
-    results.append(check_config_roundtrip(adc_pd, "Photodiode ADC (AIN0 single-ended)",
-                                           MUX_AIN0_AVSS, PGA_BYPASS))
-    results.append(check_config_roundtrip(adc_bridge, "Bridge ADC (AIN2-AIN3 diff)",
-                                           MUX_AIN2_AIN3_DIFF, PGA_ENABLED))
+    for name, adc, _ in boards:
+        results.append(check_config_roundtrip(adc, f"{name} photodiode (AIN0 single-ended)",
+                                               MUX_AIN0_AVSS, PGA_BYPASS))
+        results.append(check_config_roundtrip(adc, f"{name} bridge (AIN2-AIN3 diff)",
+                                               MUX_AIN2_AIN3_DIFF, PGA_ENABLED))
 
     if not all(results):
-        print("\nConfig round-trip failed — check wiring/CS pins before sampling.")
-        adc_pd.close()
-        adc_bridge.close()
-        spi_pd.close()
-        spi_bridge.close()
-        pi.stop()
+        print("\nConfig round-trip failed — check wiring/CS pins/power before sampling.")
+        cleanup()
         sys.exit(1)
 
-    results.append(check_samples(adc_pd, "Photodiode ADC", args.samples, photodiode_extra))
-    results.append(check_samples(adc_bridge, "Bridge ADC", args.samples, bridge_extra))
+    for name, adc, _ in boards:
+        adc.configure(mux=MUX_AIN0_AVSS, gain=GAIN_1X, pga_bypass=PGA_BYPASS)
+        results.append(check_samples(adc, f"{name} photodiode", args.samples, photodiode_extra))
 
-    adc_pd.close()
-    adc_bridge.close()
-    spi_pd.close()
-    spi_bridge.close()
-    pi.stop()
+        adc.configure(mux=MUX_AIN2_AIN3_DIFF, gain=GAIN_1X, pga_bypass=PGA_ENABLED)
+        results.append(check_samples(adc, f"{name} bridge", args.samples, bridge_extra))
+
+    cleanup()
 
     print(f"\n=== Results: {sum(results)}/{len(results)} checks passed ===")
     if all(results):
