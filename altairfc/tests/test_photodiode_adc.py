@@ -5,8 +5,8 @@ Two identical ADS1220 24-bit delta-sigma ADC breakouts share the Pi's SPI0
 bus (SCLK/MOSI/MISO) but each has its own chip-select driven manually via
 pigpio (neither uses the hardware CE0/CE1 pins):
 
-    ADC1: CS = GPIO4
-    ADC2: CS = GPIO17
+    ADC1: CS = GPIO17
+    ADC2: CS = GPIO4
 
 Each ADC independently reads BOTH inputs on its own breakout:
     - Photodiode TIA output on AIN0, single-ended vs AVSS
@@ -21,8 +21,8 @@ Usage:
     python tests/test_photodiode_adc.py
     python tests/test_photodiode_adc.py --samples 10
     python tests/test_photodiode_adc.py --stream          # continuous read, Ctrl+C to stop
-    python tests/test_photodiode_adc.py --only 1          # test only ADC1 (CS=GPIO4)
-    python tests/test_photodiode_adc.py --only 2          # test only ADC2 (CS=GPIO17)
+    python tests/test_photodiode_adc.py --only 1          # test only ADC1 (CS=GPIO17)
+    python tests/test_photodiode_adc.py --only 2          # test only ADC2 (CS=GPIO4)
 
 Checks performed, per ADC:
     1. ADC responds (config register write/read round-trip) for both the
@@ -281,8 +281,8 @@ def main():
                      "(two identical ADS1220 breakouts, each reads both inputs)")
     parser.add_argument("--spi-bus", type=int, default=0, help="SPI bus number")
     parser.add_argument("--spi-speed", type=int, default=1_000_000, help="SPI clock speed (Hz)")
-    parser.add_argument("--cs1", type=int, default=4, help="BCM pin for ADC1 CS")
-    parser.add_argument("--cs2", type=int, default=17, help="BCM pin for ADC2 CS")
+    parser.add_argument("--cs1", type=int, default=17, help="BCM pin for ADC1 CS")
+    parser.add_argument("--cs2", type=int, default=4, help="BCM pin for ADC2 CS")
     parser.add_argument("--only", type=int, choices=[1, 2], default=None,
                          help="Test only ADC1 (--cs1) or only ADC2 (--cs2), "
                               "useful for isolating a hardware fault to one board")
