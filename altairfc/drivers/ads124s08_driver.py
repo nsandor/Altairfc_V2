@@ -182,6 +182,19 @@ class ads124s08Driver:
             volts=volts, resistance_ohm=resistance, temperature_c=temperature
         )
 
+    def read_pd_thermistor(self) -> ThermistorReading | None:
+        """Switch mux to photodiode temp sensor and take one reading."""
+        if self._configure(Mux.PD_TMP, DataRate.SPS_100) is None:
+            return None
+        volts = self._read_single_shot_volts()
+        if volts is None:
+            return None
+        resistance = self._lib.ads124s08_thermistor_volts_to_resistance(volts)
+        temperature = self._lib.ads124s08_resistance_to_celsius(resistance)
+        return ThermistorReading(
+            volts=volts, resistance_ohm=resistance, temperature_c=temperature
+        )
+
     def close(self) -> None:
         if self._handle:
             self._lib.ads124s08_close(self._handle)
