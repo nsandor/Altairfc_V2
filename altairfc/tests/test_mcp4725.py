@@ -2,10 +2,9 @@
 MCP4725 hardware verification script.
 
 Runs directly on the Pi with the MCP4725 single-channel DAC wired at I2C
-address 0x60 on this board (confirmed via i2cdetect — this breakout's A0
-strapping differs from the datasheet's standard 0x62/0x63 pair; pass
---address to override if your board differs). Uses smbus2 directly — no
-driver module required.
+address 0x60 (confirmed via i2cdetect — this breakout's A0 strapping
+differs from the datasheet's standard 0x62/0x63 pair). Uses smbus2
+directly — no driver module required.
 
 Unlike the MCP4728, the MCP4725 has no LDAC pin (writes always reach VOUT
 immediately), no selectable reference (Vref is always Vdd), and no gain
@@ -14,7 +13,7 @@ and 4 power-down modes (normal, plus 3 different pulldown resistances to
 GND while powered down).
 
 Usage:
-    python tests/test_mcp4725.py [--bus /dev/i2c-1] [--address 0x60] [--vdd 3.3]
+    python tests/test_mcp4725.py [--bus /dev/i2c-1] [--vdd 3.3]
     python tests/test_mcp4725.py --hold 2047                # hold code 2047, Ctrl+C to stop
     python tests/test_mcp4725.py --sweep                    # ramp 0->max->0, Ctrl+C to stop
     python tests/test_mcp4725.py --save-eeprom --code 2047  # persist as power-on default
@@ -242,9 +241,6 @@ def set_power_down(bus, addr, power_down):
 def main():
     parser = argparse.ArgumentParser(description="MCP4725 hardware verification")
     parser.add_argument("--bus", default="/dev/i2c-1", help="I2C device node")
-    parser.add_argument("--address", default=hex(DEFAULT_ADDR),
-                         help="I2C address (default 0x60 per this board's i2cdetect scan; "
-                              "datasheet default is 0x62/0x63 depending on A0 strapping)")
     parser.add_argument("--vdd", default=3.3, type=float, help="Supply voltage for Vout estimate")
     parser.add_argument("--hold", type=int, default=None,
                          help="Instead of checks, write this 12-bit code (0-4095) and hold it "
@@ -260,7 +256,7 @@ def main():
                               "(0=normal, 1=1k pulldown, 2=100k, 3=500k)")
     args = parser.parse_args()
 
-    addr = int(args.address, 0)
+    addr = DEFAULT_ADDR
 
     try:
         import smbus2
