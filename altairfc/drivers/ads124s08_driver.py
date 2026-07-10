@@ -10,72 +10,82 @@ logger = logging.getLogger(__name__)
 
 _SO_PATH = Path(__file__).parent / "libads124s08_driver.so"
 
+
 class Mux(IntEnum):
-    VGND      = 0x20    # Differential read, AIN2 (Virtual Ground)(+) AIN0 (2.5V ref)(-)
-    IVC       = 0x30    # Differential read, AIN3(IVC level shift output)(+) AIN0 (2.5V ref)(-)
-    ACF       = 0x40    # Differential read, AIN4(ACF level shift output)(+) AIN0 (2.5V ref)(-)
-    TIA       = 0x50    # Differential read, AIN5(TIA output)(+) AIN0 (2.5V ref)(-)
-    BOARD_TMP = 0x60    # Differential read, AIN6(Board Temp Sensor)(+) AIN0 (2.5V ref)(-)
-    PD_TMP    = 0x70    # Differential read, AIN7(PD Temp Sensor)(+) AIN0 (2.5V ref)(-)
+    VGND = 0x20  # Differential read, AIN2 (Virtual Ground)(+) AIN0 (2.5V ref)(-)
+    IVC = 0x30  # Differential read, AIN3(IVC level shift output)(+) AIN0 (2.5V ref)(-)
+    ACF = 0x40  # Differential read, AIN4(ACF level shift output)(+) AIN0 (2.5V ref)(-)
+    TIA = 0x50  # Differential read, AIN5(TIA output)(+) AIN0 (2.5V ref)(-)
+    BOARD_TMP = 0x60  # Differential read, AIN6(Board Temp Sensor)(+) AIN0 (2.5V ref)(-)
+    PD_TMP = 0x70  # Differential read, AIN7(PD Temp Sensor)(+) AIN0 (2.5V ref)(-)
 
 
 class DataRate(IntEnum):
-    SPS_2_5   = 0x00
-    SPS_5     = 0x01
-    SPS_10    = 0x02
-    SPS_16_6  = 0x03
-    SPS_20    = 0x04
-    SPS_50    = 0x05
-    SPS_60    = 0x06
-    SPS_100   = 0x07
-    SPS_200   = 0x08
-    SPS_400   = 0x09
-    SPS_800   = 0x0A
-    SPS_1000  = 0x0B
-    SPS_2000  = 0x0C
-    SPS_4000  = 0x0D
+    SPS_2_5 = 0x00
+    SPS_5 = 0x01
+    SPS_10 = 0x02
+    SPS_16_6 = 0x03
+    SPS_20 = 0x04
+    SPS_50 = 0x05
+    SPS_60 = 0x06
+    SPS_100 = 0x07
+    SPS_200 = 0x08
+    SPS_400 = 0x09
+    SPS_800 = 0x0A
+    SPS_1000 = 0x0B
+    SPS_2000 = 0x0C
+    SPS_4000 = 0x0D
 
 
 class Relay(IntEnum):
-    ACF          = 0x01
-    IVC          = 0x02
-    TIA          = 0x04
-    TIA_LOWGAIN  = 0x08
+    ACF = 0x01
+    IVC = 0x02
+    TIA = 0x04
+    TIA_LOWGAIN = 0x08
+
 
 def _load_lib() -> ctypes.CDLL:
     lib = ctypes.CDLL(str(_SO_PATH))
 
-    lib.ads124s08_open.restype  = ctypes.c_void_p
+    lib.ads124s08_open.restype = ctypes.c_void_p
     lib.ads124s08_open.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
 
-    lib.ads124s08_reset.restype  = ctypes.c_int
+    lib.ads124s08_reset.restype = ctypes.c_int
     lib.ads124s08_reset.argtypes = [ctypes.c_void_p]
 
-    lib.ads124s08_configure.restype  = ctypes.c_int
+    lib.ads124s08_configure.restype = ctypes.c_int
     lib.ads124s08_configure.argtypes = [
-        ctypes.c_void_p, ctypes.c_uint8, ctypes.c_uint8,
+        ctypes.c_void_p,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
         ctypes.POINTER(ctypes.c_uint8 * 5),
     ]
 
-    lib.ads124s08_read_config.restype  = ctypes.c_int
-    lib.ads124s08_read_config.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_uint8 * 5)]
+    lib.ads124s08_read_config.restype = ctypes.c_int
+    lib.ads124s08_read_config.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_uint8 * 5),
+    ]
 
-    lib.ads124s08_read_single_shot.restype  = ctypes.c_int
-    lib.ads124s08_read_single_shot.argtypes = [ctypes.c_void_p, ctypes.POINTER(ctypes.c_int32)]
-    
+    lib.ads124s08_read_single_shot.restype = ctypes.c_int
+    lib.ads124s08_read_single_shot.argtypes = [
+        ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int32),
+    ]
+
     lib.ads124s08_switch_relays.restype = ctypes.c_int
     lib.ads124s08_switch_relays.argtypes = [ctypes.c_void_p, ctypes.c_uint8]
 
-    lib.ads124s08_code_to_volts.restype  = ctypes.c_float
+    lib.ads124s08_code_to_volts.restype = ctypes.c_float
     lib.ads124s08_code_to_volts.argtypes = [ctypes.c_int32]
 
-    lib.ads124s08_thermistor_volts_to_resistance.restype  = ctypes.c_float
+    lib.ads124s08_thermistor_volts_to_resistance.restype = ctypes.c_float
     lib.ads124s08_thermistor_volts_to_resistance.argtypes = [ctypes.c_float]
 
-    lib.ads124s08_resistance_to_celsius.restype  = ctypes.c_float
+    lib.ads124s08_resistance_to_celsius.restype = ctypes.c_float
     lib.ads124s08_resistance_to_celsius.argtypes = [ctypes.c_float]
 
-    lib.ads124s08_close.restype  = None
+    lib.ads124s08_close.restype = None
     lib.ads124s08_close.argtypes = [ctypes.c_void_p]
     return lib
 
@@ -168,7 +178,9 @@ class ads124s08Driver:
             return None
         resistance = self._lib.ads124s08_thermistor_volts_to_resistance(volts)
         temperature = self._lib.ads124s08_resistance_to_celsius(resistance)
-        return ThermistorReading(volts=volts, resistance_ohm=resistance, temperature_c=temperature)
+        return ThermistorReading(
+            volts=volts, resistance_ohm=resistance, temperature_c=temperature
+        )
 
     def close(self) -> None:
         if self._handle:

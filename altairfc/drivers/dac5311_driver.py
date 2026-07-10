@@ -10,27 +10,30 @@ logger = logging.getLogger(__name__)
 
 _SO_PATH = Path(__file__).parent / "libdac5311_driver.so"
 
+
 class PowerDownMode(IntEnum):
     NORMAL = 0x00
     OUTPUT_1K_TO_GND = 0x01
     OUTPUT_100K_TO_GND = 0x02
     HIGH_Z = 0x03
 
+
 def _load_lib() -> ctypes.CDLL:
     lib = ctypes.CDLL(str(_SO_PATH))
 
-    lib.dac5311_open.restype  = ctypes.c_void_p
+    lib.dac5311_open.restype = ctypes.c_void_p
     lib.dac5311_open.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
 
-    lib.dac5311_write_value.restype  = ctypes.c_int
+    lib.dac5311_write_value.restype = ctypes.c_int
     lib.dac5311_write_value.argtypes = [ctypes.c_void_p, ctypes.c_uint8]
 
-    lib.dac5311_power_down.restype  = ctypes.c_int
+    lib.dac5311_power_down.restype = ctypes.c_int
     lib.dac5311_power_down.argtypes = [ctypes.c_void_p, ctypes.c_uint8]
 
-    lib.dac5311_close.restype  = None
+    lib.dac5311_close.restype = None
     lib.dac5311_close.argtypes = [ctypes.c_void_p]
     return lib
+
 
 class dac5311Driver:
     """
@@ -43,7 +46,9 @@ class dac5311Driver:
         dac.close()
     """
 
-    def __init__(self, spi_dev: str, gpiochip: str, cs_offset: int, v_ref: float = 5.1) -> None:
+    def __init__(
+        self, spi_dev: str, gpiochip: str, cs_offset: int, v_ref: float = 5.1
+    ) -> None:
         self.v_ref = v_ref
         self._lib = _load_lib()
         self._handle = self._lib.dac5311_open(
