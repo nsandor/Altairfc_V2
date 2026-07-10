@@ -83,6 +83,7 @@
 #define BOARD_THERMISTOR_BETA 3380
 #define DIODE_THERMISTOR_RNOM 10000
 #define DIODE_THERMISTOR_BETA 3380 
+#define T0_KELVIN 298.15
 
 
 /* Data rate settle time: ~1.5x period for 20 SPS default, generous margin */
@@ -188,45 +189,46 @@ int ads124s08_reset(ads124s08 *dev)
 
 static int write_reg(ads124s08 *dev, uint8_t addr, uint8_t value)
 {
-    uint8_t buf[2] = { (uint8_t)(CMD_WREG0 | (addr << 2)), value };
-    return spi_xfer(dev, buf, 2);
+    uint8_t buf[3] = { (uint8_t)(CMD_WREG0 | (addr & 0x1F)), 0x00, value };
+    return spi_xfer(dev, buf, 3);
 }
 
 static int read_reg(ads124s08 *dev, uint8_t addr, uint8_t *out)
 {
-    uint8_t buf[2] = { (uint8_t)(CMD_RREG0 | (addr << 2)), 0x00 };
-    if (spi_xfer(dev, buf, 2) < 0) return -1;
-    *out = buf[1];
+    uint8_t buf[3] = { (uint8_t)(CMD_RREG0 | (addr & 0x1F)), 0x00, 0x00 };
+    if (spi_xfer(dev, buf, 3) < 0) return -1;
+    *out = buf[2];
     return 0;
 }
-
 /*
  Configure all registers to baseline:
  reg02h: Input mux register configured to mux setting
  reg03h: gain register set to bypass PGA
  reg04h: Datarate register set to global chop, external clock,single shot, sinc3 filter, input datarate
- reg10h: GPIO config register set to all GPIOs enabled
- reg11h is left untouched, keeping all of the relays inactive.
+ reg11h: GPIO config register set to all GPIOs enabled
  
  * Returns  0: success, out_regs populated with the 4 bytes written
  *         -1: SPI error
  */
-int ads124s08_configure(ads124s08 *dev, uint8_t mux, uint8_t dr,  uint8_t out_regs[4])
+int ads124s08_configure(ads124s08 *dev, uint8_t mux, uint8_t dr,  uint8_t out_regs[5])
 {
     uint8_t reg02h = (uint8_t)mux;
-    uint8_t reg03h = (uint8_t)PGA_BYPASS_EN;
+    uint8_t reg03h = (uint8_t)BYPASS_PGA;
     uint8_t reg04h = (uint8_t)(G_CHOP_BIT|CLK_EXTERNAL_BIT|SINGLE_SHOT_BIT|FILTER_SINC3_BIT|dr);
-    uint8_t reg10h = (uint8_t)GPIO_ON_ALL;
+    uint8_t reg10h = (uint8_t)0x00;
+    uint8_t reg11h = (uint8_t)GPIO_ON_ALL;
 
     if (write_reg(dev, 0x02, reg02h) < 0) return -1;
     if (write_reg(dev, 0x03, reg03h) < 0) return -1;
     if (write_reg(dev, 0x04, reg04h) < 0) return -1;
     if (write_reg(dev, 0x10, reg10h) < 0) return -1;
+    if (write_reg(dev, 0x11, reg11h) < 0) return -1;
 
     out_regs[0] = reg02h;
     out_regs[1] = reg03h;
     out_regs[2] = reg04h;
     out_regs[3] = reg10h;
+    out_regs[4] = reg11h;
     return 0;
 }
 
@@ -275,6 +277,19 @@ int ads124s08_read_single_shot(ads124s08 *dev, int32_t *out_code)
     return 0;
 }
 
+/*
+ * Switch relays to measure current from different sources
+ * 
+ * Returns  0: success
+ *         -1: SPI error
+ */
+int ads124s08_switch_relays(ads124s08 *dev, uint8_t relay_mask)
+{
+    uint8_t reg10h = (uint8_t)relay_mask;
+    if (write_reg(dev, 0x10, reg10h) < 0) return -1;
+    return 0;
+}
+
 /* Differential measurement, so to get the actual 0-5V level we offset by the reference*/
 float ads124s08_code_to_volts(int32_t code)
 {
@@ -282,17 +297,17 @@ float ads124s08_code_to_volts(int32_t code)
 }
 
 /* Thermistors are the bottom half of a 10k/10k voltage divider excited by a 5V reference */
-float ads124s08_thermistor_volts_to_resistance(float Vtherm,float Rtherm)
+float ads124s08_thermistor_volts_to_resistance(float Vtherm)
 {
     if (Vtherm == 0.0f) return INFINITY;
-    return Rtherm * Vtherm / (5.0f - Vtherm);
+    return BOARD_THERMISTOR_RNOM * Vtherm / (VREF_V - Vtherm);
 }
 
 /* Beta-parameter NTC equation, inverted for temperature */
 float ads124s08_resistance_to_celsius(float r)
 {
     if (r <= 0.0f) return NAN;
-    float t_kelvin = 1.0f / (1.0f / T0_KELVIN + (1.0f / THERM_B) * logf(r / THERM_R25));
+    float t_kelvin = 1.0f / (1.0f / T0_KELVIN + (1.0f / BOARD_THERMISTOR_BETA) * logf(r / BOARD_THERMISTOR_RNOM));
     return t_kelvin - 273.15f;
 }
 
