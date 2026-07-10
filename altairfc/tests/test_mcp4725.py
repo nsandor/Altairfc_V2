@@ -38,7 +38,7 @@ import argparse
 import sys
 import time
 
-DEFAULT_ADDR = 0x62   # A0 pin tied low; use 0x63 if A0 is tied high
+DEFAULT_ADDR = 0x63   # A0 pin tied low; use 0x63 if A0 is tied high
 MAX_CODE = 4095
 CODE_DIVISOR = 4096.0  # Vout = Vdd * code / 4096, per datasheet (not 4095)
 
