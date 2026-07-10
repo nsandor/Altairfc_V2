@@ -67,6 +67,20 @@ def _load_lib() -> ctypes.CDLL:
         ctypes.POINTER(ctypes.c_uint8 * 5),
     ]
 
+    lib.ads124s08_read_register.restype = ctypes.c_int
+    lib.ads124s08_read_register.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_uint8,
+        ctypes.POINTER(ctypes.c_uint8),
+    ]
+
+    lib.ads124s08_write_register.restype = ctypes.c_int
+    lib.ads124s08_write_register.argtypes = [
+        ctypes.c_void_p,
+        ctypes.c_uint8,
+        ctypes.c_uint8,
+    ]
+
     lib.ads124s08_read_single_shot.restype = ctypes.c_int
     lib.ads124s08_read_single_shot.argtypes = [
         ctypes.c_void_p,
@@ -137,6 +151,12 @@ class ads124s08Driver:
         if self._lib.ads124s08_reset(self._handle) != 0:
             logger.warning("ads124s08Driver: reset SPI error")
 
+    def reset(self) -> bool:
+        if self._lib.ads124s08_reset(self._handle) != 0:
+            logger.warning("ads124s08Driver: reset SPI error")
+            return False
+        return True
+
     def _configure(self, mux: int, dr: int) -> tuple[int, int, int, int, int] | None:
         out = (ctypes.c_uint8 * 5)()
         ret = self._lib.ads124s08_configure(self._handle, mux, dr, ctypes.byref(out))
@@ -152,6 +172,21 @@ class ads124s08Driver:
             logger.warning("ads124s08Driver: read_config SPI error")
             return None
         return tuple(out)
+
+    def read_register(self, addr: int) -> int | None:
+        out = ctypes.c_uint8()
+        ret = self._lib.ads124s08_read_register(self._handle, addr, ctypes.byref(out))
+        if ret != 0:
+            logger.warning("ads124s08Driver: read_register SPI error")
+            return None
+        return out.value
+
+    def write_register(self, addr: int, value: int) -> bool:
+        ret = self._lib.ads124s08_write_register(self._handle, addr, value)
+        if ret != 0:
+            logger.warning("ads124s08Driver: write_register SPI error")
+            return False
+        return True
 
     def _read_single_shot_volts(self) -> float | None:
         code = ctypes.c_int32()

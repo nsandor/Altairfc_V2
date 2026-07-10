@@ -114,7 +114,9 @@ static int spi_xfer(ads124s08 *dev, uint8_t *buf, int len)
 
     cs_low(dev);
     int ret = ioctl(dev->fd_spi, SPI_IOC_MESSAGE(1), &xfer);
+    usleep(50);
     cs_high(dev);
+    usleep(50);
     return ret < 0 ? -1 : 0;
 }
 
@@ -141,9 +143,9 @@ ads124s08 *ads124s08_open(const char *spi_dev, const char *gpiochip_name, unsign
         return NULL;
     }
 
-    uint8_t mode = SPI_MODE_1;   /* ads124s08: CPOL=0, CPHA=1 */
+    uint8_t mode = SPI_MODE_1 | SPI_NO_CS;   /* ads124s08: CPOL=0, CPHA=1 */
     uint8_t bits = 8;
-    uint32_t speed = 1000000;
+    uint32_t speed = 100000;
     if (ioctl(dev->fd_spi, SPI_IOC_WR_MODE, &mode) < 0 ||
         ioctl(dev->fd_spi, SPI_IOC_WR_BITS_PER_WORD, &bits) < 0 ||
         ioctl(dev->fd_spi, SPI_IOC_WR_MAX_SPEED_HZ, &speed) < 0) {
@@ -182,7 +184,7 @@ int ads124s08_reset(ads124s08 *dev)
 {
     uint8_t buf[1] = { CMD_RESET };
     int ret = spi_xfer(dev, buf, 1);
-    struct timespec ts = { .tv_sec = 0, .tv_nsec = 1000000L }; /* 1ms tosc startup margin */
+    struct timespec ts = { .tv_sec = 0, .tv_nsec = 5000000L }; /* 5ms tosc startup margin */
     nanosleep(&ts, NULL);
     return ret;
 }
@@ -199,6 +201,16 @@ static int read_reg(ads124s08 *dev, uint8_t addr, uint8_t *out)
     if (spi_xfer(dev, buf, 3) < 0) return -1;
     *out = buf[2];
     return 0;
+}
+
+int ads124s08_read_register(ads124s08 *dev, uint8_t addr, uint8_t *out)
+{
+    return read_reg(dev, addr, out);
+}
+
+int ads124s08_write_register(ads124s08 *dev, uint8_t addr, uint8_t value)
+{
+    return write_reg(dev, addr, value);
 }
 /*
  Configure all registers to baseline:
@@ -240,6 +252,7 @@ int ads124s08_configure(ads124s08 *dev, uint8_t mux, uint8_t dr,  uint8_t out_re
 int ads124s08_read_config(ads124s08 *dev, uint8_t out_regs[5])
 {
     if (read_reg(dev, 0x02, &out_regs[0]) < 0) return -1;
+
     if (read_reg(dev, 0x03, &out_regs[1]) < 0) return -1;
     if (read_reg(dev, 0x04, &out_regs[2]) < 0) return -1;
     if (read_reg(dev, 0x10, &out_regs[3]) < 0) return -1;

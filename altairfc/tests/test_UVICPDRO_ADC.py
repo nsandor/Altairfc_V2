@@ -13,6 +13,8 @@ from drivers.ads124s08_driver import (
     Relay,
 )  # noqa: E402
 from drivers.dac5311_driver import dac5311Driver
+from drivers.mcp23017 import MCP23017
+from drivers.integrator_driver import IntegratorDriver
 
 
 def open_boards(only, spi_dev, gpiochip, cs1, cs2, dac_cs1, dac_cs2):
@@ -33,6 +35,7 @@ def test_configset(adc: ads124s08Driver):
     print(f"Testing configuration for {adc}")
     expected_config = adc._configure(Mux.VGND, DataRate.SPS_1000)
     read_config = adc.read_config()
+    print(f"expected_config = {expected_config}")
     print(f"Read config: {read_config}")
     assert read_config == expected_config
 
@@ -102,13 +105,18 @@ def run_all_checks(boards):
         print("Checks passed.")
 
 
-def interactive_menu(boards):
+def interactive_menu(boards, integrator: IntegratorDriver = None):
     while True:
         print("\n--- ADC Interactive Test Menu ---")
         print("1. Run all checks")
         print("2. Manually actuate relays")
         print("3. Stream data from a Mux channel")
         print("4. Set DAC voltage")
+        print("5. Integrator read command")
+        print("6. Read ADC register")
+        print("7. Write ADC register")
+        print("8. Send ADC reset")
+        print("9. Read all ADC registers")
         print("q. Quit")
 
         choice = input("Enter choice: ").strip().lower()
@@ -202,13 +210,74 @@ def interactive_menu(boards):
                     time.sleep(0.1)
             except KeyboardInterrupt:
                 print("\nStopped streaming.")
+        elif choice == "5":
+            if integrator is None:
+                print("Integrator driver not initialized.")
+                continue
+
+            print("\nSelect board:")
+            valid_boards = []
+            for i, (bname, adc, dac) in enumerate(boards):
+                print(f"{i+1}: {bname}")
+                valid_boards.append((bname, adc))
+
+            b_choice = input("Enter choice: ").strip()
+            try:
+                board_idx = int(b_choice) - 1
+                if not (0 <= board_idx < len(valid_boards)):
+                    raise ValueError
+                bname, adc = valid_boards[board_idx]
+            except ValueError:
+                print("Invalid choice.")
+                continue
+
+            print("\nSelect integrator:")
+            print("1. IVC")
+            print("2. ACF")
+            int_choice = input("Enter choice: ").strip()
+
+            if int_choice == "1":
+                mux_channel = Mux.IVC
+                relay_channel = Relay.IVC
+            elif int_choice == "2":
+                mux_channel = Mux.ACF
+                relay_channel = Relay.ACF
+            else:
+                print("Invalid integrator choice.")
+                continue
+
+            time_input = input("Enter integration time in microseconds: ").strip()
+            try:
+                time_us = float(time_input)
+            except ValueError:
+                print("Invalid time.")
+                continue
+
+            # Configure the adc input mux appropriately
+            adc._configure(mux_channel, DataRate.SPS_100)
+
+            # Switch the relay to the appropriate channel
+            adc.set_relays(relay_channel.value)
+            # Wait a moment for relays to settle
+            time.sleep(0.05)
+            # Trigger an integrate and hold
+            integrator.integrate_and_hold(time_us)
+            # Make a voltage reading
+            val = adc.read_voltage()
+            # Reset the integrator
+            integrator.reset()
+            if val is not None:
+                print(f"Read voltage: {val:.4f} V")
+            else:
+                print("Read failed")
+
         elif choice == "4":
             print("\nSelect board to set DAC voltage:")
             valid_boards = []
             for i, (bname, adc, dac) in enumerate(boards):
                 print(f"{i+1}: {bname}")
                 valid_boards.append((bname, dac))
-            
+
             b_choice = input("Enter choice: ").strip()
             try:
                 board_idx = int(b_choice) - 1
@@ -220,13 +289,19 @@ def interactive_menu(boards):
                 continue
 
             if dac is None:
-                cs_input = input(f"No DAC initialized for {bname}. Enter GPIO CS pin to initialize (or press Enter to cancel): ").strip()
+                cs_input = input(
+                    f"No DAC initialized for {bname}. Enter GPIO CS pin to initialize (or press Enter to cancel): "
+                ).strip()
                 if not cs_input:
                     continue
                 try:
                     cs_pin = int(cs_input)
                     dac = dac5311Driver("/dev/spidev0.0", "gpiochip0", cs_pin)
-                    boards[board_idx] = (boards[board_idx][0], boards[board_idx][1], dac)
+                    boards[board_idx] = (
+                        boards[board_idx][0],
+                        boards[board_idx][1],
+                        dac,
+                    )
                 except Exception as e:
                     print(f"Failed to initialize DAC: {e}")
                     continue
@@ -238,6 +313,126 @@ def interactive_menu(boards):
                 print(f"Set voltage for {bname} DAC to {actual_v:.4f} V")
             except ValueError:
                 print("Invalid voltage.")
+        elif choice == "6":
+            print("\nSelect board:")
+            valid_boards = []
+            for i, (bname, adc, dac) in enumerate(boards):
+                print(f"{i+1}: {bname}")
+                valid_boards.append((bname, adc))
+
+            b_choice = input("Enter choice: ").strip()
+            try:
+                board_idx = int(b_choice) - 1
+                if not (0 <= board_idx < len(valid_boards)):
+                    raise ValueError
+                bname, adc = valid_boards[board_idx]
+            except ValueError:
+                print("Invalid choice.")
+                continue
+
+            reg_input = input("Enter register address (hex or int): ").strip()
+            try:
+                addr = int(reg_input, 0)
+                if not (0 <= addr <= 0x1F):
+                    print("Address out of range (0-0x1F).")
+                    continue
+            except ValueError:
+                print("Invalid register address.")
+                continue
+
+            val = adc.read_register(addr)
+            if val is not None:
+                print(f"Register 0x{addr:02X} value: 0x{val:02X} ({val})")
+            else:
+                print("Failed to read register.")
+        elif choice == "7":
+            print("\nSelect board:")
+            valid_boards = []
+            for i, (bname, adc, dac) in enumerate(boards):
+                print(f"{i+1}: {bname}")
+                valid_boards.append((bname, adc))
+
+            b_choice = input("Enter choice: ").strip()
+            try:
+                board_idx = int(b_choice) - 1
+                if not (0 <= board_idx < len(valid_boards)):
+                    raise ValueError
+                bname, adc = valid_boards[board_idx]
+            except ValueError:
+                print("Invalid choice.")
+                continue
+
+            reg_input = input("Enter register address (hex or int): ").strip()
+            try:
+                addr = int(reg_input, 0)
+                if not (0 <= addr <= 0x1F):
+                    print("Address out of range (0-0x1F).")
+                    continue
+            except ValueError:
+                print("Invalid register address.")
+                continue
+
+            val_input = input("Enter value to write (hex or int): ").strip()
+            try:
+                val = int(val_input, 0)
+                if not (0 <= val <= 0xFF):
+                    print("Value out of range (0-0xFF).")
+                    continue
+            except ValueError:
+                print("Invalid value.")
+                continue
+
+            success = adc.write_register(addr, val)
+            if success:
+                print(f"Successfully wrote 0x{val:02X} to register 0x{addr:02X}.")
+            else:
+                print("Failed to write register.")
+        elif choice == "9":
+            print("\nSelect board:")
+            valid_boards = []
+            for i, (bname, adc, dac) in enumerate(boards):
+                print(f"{i+1}: {bname}")
+                valid_boards.append((bname, adc))
+
+            b_choice = input("Enter choice: ").strip()
+            try:
+                board_idx = int(b_choice) - 1
+                if not (0 <= board_idx < len(valid_boards)):
+                    raise ValueError
+                bname, adc = valid_boards[board_idx]
+            except ValueError:
+                print("Invalid choice.")
+                continue
+
+            print(f"\n--- Registers for {bname} ---")
+            for addr in range(0x12):
+                val = adc.read_register(addr)
+                if val is not None:
+                    print(f"Reg 0x{addr:02X}: 0x{val:02X} (0b{val:08b})")
+                else:
+                    print(f"Reg 0x{addr:02X}: Failed")
+        elif choice == "8":
+            print("\nSelect board:")
+            valid_boards = []
+            for i, (bname, adc, dac) in enumerate(boards):
+                print(f"{i+1}: {bname}")
+                valid_boards.append((bname, adc))
+
+            b_choice = input("Enter choice: ").strip()
+            try:
+                board_idx = int(b_choice) - 1
+                if not (0 <= board_idx < len(valid_boards)):
+                    raise ValueError
+                bname, adc = valid_boards[board_idx]
+            except ValueError:
+                print("Invalid choice.")
+                continue
+
+            success = adc.reset()
+            if success:
+                print(f"Successfully sent reset command to {bname}.")
+            else:
+                print(f"Failed to send reset command to {bname}.")
         elif choice == "q":
             break
         else:
@@ -256,18 +451,6 @@ if __name__ == "__main__":
         default=3,
         help="Select board: 1 for Sergeant, 2 for Soldier, 3 for both (default)",
     )
-    parser.add_argument(
-        "--dac1-cs",
-        type=int,
-        default=None,
-        help="GPIO CS pin for Sergeant DAC5311 (default: prompt if needed)",
-    )
-    parser.add_argument(
-        "--dac2-cs",
-        type=int,
-        default=None,
-        help="GPIO CS pin for Soldier DAC5311 (default: prompt if needed)",
-    )
     args = parser.parse_args()
 
     board_only = None
@@ -281,10 +464,10 @@ if __name__ == "__main__":
             only=board_only,
             spi_dev="/dev/spidev0.0",
             gpiochip="gpiochip0",
-            cs1=7,
-            cs2=8,
-            dac_cs1=args.dac1_cs,
-            dac_cs2=args.dac2_cs,
+            cs1=13,
+            cs2=19,
+            dac_cs1=12,
+            dac_cs2=6,
         )
     except OSError as e:
         print(e)
@@ -295,8 +478,17 @@ if __name__ == "__main__":
         sys.exit(1)
 
     try:
-        interactive_menu(boards)
+        mcp = MCP23017()
+        integrator = IntegratorDriver(mcp)
+    except Exception as e:
+        print(f"Failed to initialize IntegratorDriver: {e}")
+        integrator = None
+
+    try:
+        interactive_menu(boards, integrator)
     finally:
+        if integrator and integrator.io:
+            integrator.io.close()
         for _, board, dac in boards:
             board.close()
             if dac:
