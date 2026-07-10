@@ -14,7 +14,7 @@ Usage:
     python tests/calibrate_mcp4728.py
     python tests/calibrate_mcp4728.py --increment 16
 
-Output: mcp4728_calibration.csv in the current directory (code, voltage_v).
+Output: mcp4728_calibration.csv in the current directory (code, voltage_mv).
 """
 
 import argparse
@@ -64,10 +64,10 @@ def fast_write_channel(bus, addr, channel, code, other_codes):
     bus.write_i2c_block_data(addr, payload[0], payload[1:])
 
 
-def prompt_voltage():
-    """Ask for the measured voltage; empty input or Ctrl+C/Ctrl+D stops the sweep."""
+def prompt_voltage_mv():
+    """Ask for the measured voltage in mV; empty input or Ctrl+C/Ctrl+D stops the sweep."""
     try:
-        raw = input("  Measured voltage (V), Enter/Ctrl+C to stop: ").strip()
+        raw = input("  Measured voltage (mV), Enter/Ctrl+C to stop: ").strip()
     except (EOFError, KeyboardInterrupt):
         return None
     if raw == "":
@@ -76,7 +76,7 @@ def prompt_voltage():
         return float(raw)
     except ValueError:
         print("  [!] Not a number, try again.")
-        return prompt_voltage()
+        return prompt_voltage_mv()
 
 
 def main():
@@ -116,19 +116,19 @@ def main():
 
     csv_file = open(CSV_PATH, "w", newline="")
     csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(["code", "voltage_v"])
+    csv_writer.writerow(["code", "voltage_mv"])
 
     code = 0
     try:
         while code <= MAX_CODE:
             fast_write_channel(bus, DEFAULT_ADDR, CHANNEL, code, other_codes)
             print(f"Code {code}/{MAX_CODE}")
-            voltage = prompt_voltage()
-            if voltage is None:
+            voltage_mv = prompt_voltage_mv()
+            if voltage_mv is None:
                 print("\nStopped early.")
                 break
 
-            csv_writer.writerow([code, voltage])
+            csv_writer.writerow([code, voltage_mv])
             csv_file.flush()
             code += args.increment
     finally:
