@@ -272,6 +272,12 @@ def main():
     except KeyboardInterrupt:
         print("\nStopping...")
     finally:
+        try:
+            mcp4728_multi_write_channel(bus, mcp4728_addr, args.channel, 0,
+                                         vref_vdd=True, gain=1)
+            print(f"CH{ch_letter} reset to code 0")
+        except OSError as e:
+            print(f"[FAIL] Could not reset MCP4728 channel {ch_letter} to 0: {e}")
         ldac.close()
         bus.close()
         print("Done")
