@@ -21,6 +21,7 @@ Usage:
     python tests/test_mcp4728_breakout.py [--bus /dev/i2c-1] [--address 0x60] [--vdd 3.3]
     python tests/test_mcp4728_breakout.py --sweep 1              # sweep channel 1, Ctrl+C to stop
     python tests/test_mcp4728_breakout.py --hold 0 --code 2047   # hold channel A at code 2047, Ctrl+C to stop
+    python tests/test_mcp4728_breakout.py --hold 0 1 --code-a 2047 --code-b 1024  # hold A and B at different codes
     python tests/test_mcp4728_breakout.py --zero-eeprom          # persist 0V on all channels
     python tests/test_mcp4728_breakout.py --save-eeprom --code 2047
 
@@ -250,28 +251,34 @@ def sweep_channel(bus, addr, channel, vdd):
         print("\nDone")
 
 
-def hold_value(bus, addr, channel, code, vdd):
+def hold_values(bus, addr, channel_codes, vdd):
     """
-    Write a single known code to one channel (forcing Vref=Vdd, gain=1x via
-    Multi-Write) and hold it there until Ctrl+C. Other channels are left at 0.
-    On Ctrl+C, resets that channel back to 0V before exiting.
+    Write known codes to one or more channels (forcing Vref=Vdd, gain=1x via
+    Multi-Write) and hold them there until Ctrl+C. Channels not listed are
+    left at 0. On Ctrl+C, resets all listed channels back to 0V before exiting.
+
+    channel_codes: dict mapping channel index (0-3) -> code (0-4095)
     """
     codes = [0, 0, 0, 0]
-    codes[channel] = code
+    for channel, code in channel_codes.items():
+        codes[channel] = code
     multi_write_all(bus, addr, codes, vref_vdd=True, gain=1)
 
-    expected_v = vdd * code / MAX_CODE
-    print(f"Holding CH{chr(ord('A') + channel)} at code {code} "
-          f"(~{expected_v:.3f} V with Vdd={vdd} V), Ctrl+C to stop")
+    for channel, code in channel_codes.items():
+        expected_v = vdd * code / MAX_CODE
+        print(f"Holding CH{chr(ord('A') + channel)} at code {code} (~{expected_v:.3f} V with Vdd={vdd} V)")
+    print("Ctrl+C to stop")
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
-        codes[channel] = 0
+        for channel in channel_codes:
+            codes[channel] = 0
         fast_write_all(bus, addr, codes)
-        print("\nDone — CH%s reset to 0V" % chr(ord('A') + channel))
+        reset_names = ", ".join(f"CH{chr(ord('A') + ch)}" for ch in channel_codes)
+        print(f"\nDone — {reset_names} reset to 0V")
 
 
 def save_eeprom_all(bus, addr, codes, vdd):
@@ -310,11 +317,14 @@ def main():
     parser.add_argument("--vdd", default=3.3, type=float, help="Supply voltage for Vout estimate")
     parser.add_argument("--sweep", type=int, choices=[0, 1, 2, 3], default=None,
                          help="Instead of checks, continuously sweep one channel (0-3 = A-D)")
-    parser.add_argument("--hold", type=int, choices=[0, 1, 2, 3], default=None,
-                         help="Instead of checks, write --code to one channel (0-3 = A-D) "
-                              "and hold it there until Ctrl+C (other channels set to 0)")
+    parser.add_argument("--hold", type=int, nargs="+", choices=[0, 1, 2, 3], default=None,
+                         help="Instead of checks, write to one or more channels (0-3 = A-D, "
+                              "e.g. --hold 0 1) and hold them there until Ctrl+C (other "
+                              "channels set to 0). Each listed channel uses its --code-a/b/c/d "
+                              "override if given, otherwise --code")
     parser.add_argument("--code", type=int, default=MAX_CODE // 2,
-                         help="12-bit DAC code (0-4095) to use with --hold (default: mid-scale)")
+                         help="12-bit DAC code (0-4095) default for --hold/--save-eeprom channels "
+                              "with no per-channel override (default: mid-scale)")
     parser.add_argument("--zero-eeprom", action="store_true",
                          help="Persist 0V (code 0, Vref=Vdd) to EEPROM on all 4 channels "
                               "so it survives power cycles, then exit")
@@ -322,13 +332,13 @@ def main():
                          help="Persist --code (or --code-a/b/c/d) to EEPROM as the new "
                               "power-on default (Vref=Vdd) on all 4 channels, then exit")
     parser.add_argument("--code-a", type=int, default=None,
-                         help="Per-channel override for --save-eeprom (defaults to --code)")
+                         help="Per-channel override for --hold/--save-eeprom (defaults to --code)")
     parser.add_argument("--code-b", type=int, default=None,
-                         help="Per-channel override for --save-eeprom (defaults to --code)")
+                         help="Per-channel override for --hold/--save-eeprom (defaults to --code)")
     parser.add_argument("--code-c", type=int, default=None,
-                         help="Per-channel override for --save-eeprom (defaults to --code)")
+                         help="Per-channel override for --hold/--save-eeprom (defaults to --code)")
     parser.add_argument("--code-d", type=int, default=None,
-                         help="Per-channel override for --save-eeprom (defaults to --code)")
+                         help="Per-channel override for --hold/--save-eeprom (defaults to --code)")
     args = parser.parse_args()
 
     addr = int(args.address, 0)
@@ -356,7 +366,10 @@ def main():
         sys.exit(0 if ok else 1)
 
     if args.hold is not None:
-        hold_value(bus, addr, args.hold, args.code, args.vdd)
+        per_channel = [args.code_a, args.code_b, args.code_c, args.code_d]
+        channel_codes = {ch: (args.code if per_channel[ch] is None else per_channel[ch])
+                          for ch in args.hold}
+        hold_values(bus, addr, channel_codes, args.vdd)
         bus.close()
         sys.exit(0)
 
