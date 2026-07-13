@@ -82,7 +82,9 @@ class IntegratorDriver:
             acf_rst=LOW,
         )
 
-    def integrate_and_hold(self, time_us: float) -> tuple[float, float]:
+    def integrate_and_hold(
+        self, time_us: float, print_timing: bool = True
+    ) -> tuple[float, float]:
         """
         Integrate for time_us microseconds, and then hold.
         Uses busy waiting with time.perf_counter for the highest possible timing accuracy.
@@ -91,6 +93,9 @@ class IntegratorDriver:
 
         Returns:
             tuple[float, float]: The exact start and end perf_counter timestamps.
+
+        Set print_timing=False when the caller records or displays the returned
+        timing itself.
         """
         wait_s = time_us / 1_000_000.0
 
@@ -127,8 +132,10 @@ class IntegratorDriver:
 
         t_end = time.perf_counter()
         actual_time_us = (t_end - t_start) * 1_000_000.0
-        print(
-            f"Integration started at {t_start:.6f}s and ended at {t_end:.6f}s (Actual duration: {actual_time_us:.2f} us)"
-        )
+        if print_timing:
+            print(
+                f"Integration started at {t_start:.6f}s and ended at {t_end:.6f}s "
+                f"(Actual duration: {actual_time_us:.2f} us)"
+            )
 
         return t_start, t_end

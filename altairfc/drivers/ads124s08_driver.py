@@ -188,6 +188,14 @@ class ads124s08Driver:
             return False
         return True
 
+    def _read_single_shot_raw(self) -> int | None:
+        code = ctypes.c_int32()
+        ret = self._lib.ads124s08_read_single_shot(self._handle, ctypes.byref(code))
+        if ret != 0:
+            logger.warning("ads124s08Driver: read_single_shot SPI error")
+            return None
+        return code.value
+
     def _read_single_shot_volts(self) -> float | None:
         code = ctypes.c_int32()
         ret = self._lib.ads124s08_read_single_shot(self._handle, ctypes.byref(code))
