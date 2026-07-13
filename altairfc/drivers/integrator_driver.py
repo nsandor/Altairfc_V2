@@ -8,28 +8,23 @@ class IntegratorDriver:
     via an MCP23017 I2C GPIO expander.
 
     Pin mapping:
-    - GPA2 (pin 2): Soldier IVC102 SW2
-    - GPA3 (pin 3): Soldier IVC102 SW1
-    - GPA4 (pin 4): Sergeant IVC102 SW1
-    - GPA5 (pin 5): Sergeant IVC102 SW2
-    - GPB4 (pin 12): ACF2101 HOLD
-    - GPB5 (pin 13): ACF2101 RESET
     """
 
     def __init__(self, io: MCP23017) -> None:
         self.io = io
+        self.PD_Reset = 4
+        self.IVC_SOLDIER_SW2 = 8
+        self.IVC_SOLDIER_SW1 = 7
 
-        self.IVC_SOLDIER_SW2 = 2
-        self.IVC_SOLDIER_SW1 = 3
+        self.IVC_SERGEANT_SW1 = 12
+        self.IVC_SERGEANT_SW2 = 13
 
-        self.IVC_SERGEANT_SW1 = 4
-        self.IVC_SERGEANT_SW2 = 5
-
-        self.ACF_HOLD = 12
-        self.ACF_RESET = 13
+        self.ACF_HOLD = 5
+        self.ACF_RESET = 6
 
         # Configure pins as outputs
         for pin in [
+            self.PD_Reset,
             self.IVC_SOLDIER_SW2,
             self.IVC_SOLDIER_SW1,
             self.IVC_SERGEANT_SW1,
@@ -40,6 +35,7 @@ class IntegratorDriver:
             self.io.set_output(pin)
 
         self.reset()
+        self.io.set(self.PD_Reset, HIGH)
 
     def _set_pins_fast(
         self,

@@ -233,7 +233,7 @@ int ads124s08_configure(ads124s08 *dev, uint8_t mux, uint8_t dr,  uint8_t out_re
     if (write_reg(dev, 0x02, reg02h) < 0) return -1;
     if (write_reg(dev, 0x03, reg03h) < 0) return -1;
     if (write_reg(dev, 0x04, reg04h) < 0) return -1;
-    if (write_reg(dev, 0x10, reg10h) < 0) return -1;
+    //if (write_reg(dev, 0x10, reg10h) < 0) return -1;
     if (write_reg(dev, 0x11, reg11h) < 0) return -1;
 
     out_regs[0] = reg02h;
@@ -313,7 +313,7 @@ float ads124s08_code_to_volts(int32_t code)
 float ads124s08_thermistor_volts_to_resistance(float Vtherm)
 {
     if (Vtherm == 0.0f) return INFINITY;
-    return BOARD_THERMISTOR_RNOM * Vtherm / (VREF_V - Vtherm);
+    return BOARD_THERMISTOR_RNOM * Vtherm / (5 - Vtherm);
 }
 
 /* Beta-parameter NTC equation, inverted for temperature */

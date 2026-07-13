@@ -30,79 +30,84 @@ def open_boards(only, spi_dev, gpiochip, cs1, cs2, dac_cs1, dac_cs2):
     return boards
 
 
-# Check that we can write and read config registers
-def test_configset(adc: ads124s08Driver):
-    print(f"Testing configuration for {adc}")
-    expected_config = adc._configure(Mux.VGND, DataRate.SPS_1000)
-    read_config = adc.read_config()
-    print(f"expected_config = {expected_config}")
-    print(f"Read config: {read_config}")
-    assert read_config == expected_config
+def check_range(name, val, expected_min, expected_max, unit="V"):
+    if val is None:
+        actual_str = "None"
+        passed = False
+    else:
+        actual_str = f"{val:.8f} {unit}"
+        passed = expected_min <= val <= expected_max
+
+    expected_str = f"[{expected_min:.8f}, {expected_max:.8f}] {unit}"
+    status = "PASS" if passed else "FAIL - OUT OF RANGE"
+    color = "\033[92m" if passed else "\033[91m\033[1m"
+    reset = "\033[0m"
+    print(f"  {name:25} | Actual: {actual_str:18} | Expected: {expected_str:30} | {color}[{status}]{reset}")
 
 
-# Check VGND reading. This should be in the range of 4.85-4.95V
-def check_vgnd_read(adc: ads124s08Driver):
-    print(f"Testing VGND reading for {adc}")
-    adc._configure(Mux.VGND, DataRate.SPS_100)
-    val = adc.read_voltage()
-    print(f"VGND read: {val}")
-    assert 4.85 <= val <= 4.95
+def check_thermistor(name, therm_out, expected_min, expected_max):
+    unit = "C"
+    if therm_out is None:
+        actual_str = "None"
+        passed = False
+    else:
+        val = therm_out.temperature_c
+        actual_str = f"{val:.2f} {unit}"
+        passed = expected_min <= val <= expected_max
 
-
-# Check TIA reading. This should be in the range of 4.85-4.95V
-def check_TIA_read(adc: ads124s08Driver):
-    print(f"Testing TIA reading for {adc}")
-    adc._configure(Mux.TIA, DataRate.SPS_100)
-    val = adc.read_voltage()
-    print(f"TIA read: {val}")
-    assert 4.85 <= val <= 4.95
-
-
-# Check the IVC level shifter output. Should default to near 0V
-def check_ivc_read(adc: ads124s08Driver):
-    print(f"Testing IVC reading for {adc}")
-    adc._configure(Mux.IVC, DataRate.SPS_100)
-    val = adc.read_voltage()
-    print(f"IVC read: {val}")
-    assert 0 <= val <= 0.1
-
-
-# Check the ACF level shifter output. Should default to near 0V
-def check_acf_read(adc: ads124s08Driver):
-    print(f"Testing ACF reading for {adc}")
-    adc._configure(Mux.ACF, DataRate.SPS_100)
-    val = adc.read_voltage()
-    print(f"ACF read: {val}")
-    assert 0 <= val <= 0.1
-
-
-# Check that the board thermistor gives reasonable temperature values
-def check_board_thermistor(adc: ads124s08Driver):
-    print(f"Testing thermistor reading for {adc}")
-    therm_out: ThermistorReading = adc.read_board_thermistor()
-    print(f"Thermistor read: {therm_out}")
-    assert 20 <= therm_out.temperature_c <= 40
-
-
-def check_pd_thermistor(adc: ads124s08Driver):
-    print(f"Testing photodiode thermistor reading for {adc}")
-    therm_out: ThermistorReading = adc.read_pd_thermistor()
-    print(f"Thermistor read: {therm_out}")
-    # The photodiode temperature sensor should be in the same range as the board thermistor
-    assert 20 <= therm_out.temperature_c <= 40
+    expected_str = f"[{expected_min:.2f}, {expected_max:.2f}] {unit}"
+    status = "PASS" if passed else "FAIL - OUT OF RANGE"
+    color = "\033[92m" if passed else "\033[91m\033[1m"
+    reset = "\033[0m"
+    print(f"  {name:25} | Actual: {actual_str:18} | Expected: {expected_str:30} | {color}[{status}]{reset}")
 
 
 def run_all_checks(boards):
+    print("\n" + "=" * 105)
+    print(" " * 42 + "RUNNING BATCH CHECKS")
+    print("=" * 105)
     for board_name, board, dac in boards:
-        print(f"\n--- Running checks for {board_name} ---")
-        test_configset(board)
-        check_vgnd_read(board)
-        check_TIA_read(board)
-        check_ivc_read(board)
-        check_acf_read(board)
-        check_board_thermistor(board)
-        check_pd_thermistor(board)
-        print("Checks passed.")
+        print(f"\n--- {board_name} ---")
+        print("-" * 105)
+        
+        # 1. Config
+        expected_config = board._configure(Mux.VGND, DataRate.SPS_1000)
+        read_config = board.read_config()
+        passed = (read_config == expected_config)
+        status = "PASS" if passed else "FAIL - MISMATCH"
+        color = "\033[92m" if passed else "\033[91m\033[1m"
+        reset = "\033[0m"
+        actual_str = "Match" if passed else "Mismatch"
+        expected_str = "Match"
+        print(f"  {'Config Read/Write':25} | Actual: {actual_str:18} | Expected: {expected_str:30} | {color}[{status}]{reset}")
+
+        # 2. VGND
+        board._configure(Mux.VGND, DataRate.SPS_100)
+        check_range("VGND Voltage", board.read_voltage(), 4.85, 4.95, "V")
+
+        # 3. TIA
+        board._configure(Mux.TIA, DataRate.SPS_100)
+        check_range("TIA Voltage", board.read_voltage(), 4.85, 4.95, "V")
+
+        # 4. IVC
+        board._configure(Mux.IVC, DataRate.SPS_100)
+        check_range("IVC Level Shifter", board.read_voltage(), 0.0, 0.1, "V")
+
+        # 5. ACF
+        board._configure(Mux.ACF, DataRate.SPS_100)
+        check_range("ACF Level Shifter", board.read_voltage(), 0.0, 0.4, "V")
+
+        # 6. Board Thermistor
+        therm_out: ThermistorReading = board.read_board_thermistor()
+        check_thermistor("Board Thermistor", therm_out, 20.0, 40.0)
+
+        # 7. PD Thermistor
+        therm_out: ThermistorReading = board.read_pd_thermistor()
+        check_thermistor("Photodiode Thermistor", therm_out, 20.0, 40.0)
+
+    print("\n" + "=" * 105)
+    print(" " * 44 + "CHECKS COMPLETE")
+    print("=" * 105 + "\n")
 
 
 def interactive_menu(boards, integrator: IntegratorDriver = None):
@@ -200,11 +205,17 @@ def interactive_menu(boards, integrator: IntegratorDriver = None):
                             print(f"{mux.name}: {val.temperature_c:.2f} C")
                         else:
                             print(f"{mux.name}: Read failed")
+                    elif mux == Mux.PD_TMP:
+                        val = board.read_pd_thermistor()
+                        if val:
+                            print(f"{mux.name}: {val.temperature_c:.2f} C")
+                        else:
+                            print(f"{mux.name}: Read failed")
                     else:
                         board._configure(mux, DataRate.SPS_100)
                         val = board.read_voltage()
                         if val is not None:
-                            print(f"{mux.name}: {val:.4f} V")
+                            print(f"{mux.name}: {val:.8f} V")
                         else:
                             print(f"{mux.name}: Read failed")
                     time.sleep(0.1)
@@ -267,7 +278,7 @@ def interactive_menu(boards, integrator: IntegratorDriver = None):
             # Reset the integrator
             integrator.reset()
             if val is not None:
-                print(f"Read voltage: {val:.4f} V")
+                print(f"Read voltage: {val:.8f} V")
             else:
                 print("Read failed")
 
@@ -310,7 +321,7 @@ def interactive_menu(boards, integrator: IntegratorDriver = None):
             try:
                 volts = float(v_input)
                 actual_v = dac.set_voltage(volts)
-                print(f"Set voltage for {bname} DAC to {actual_v:.4f} V")
+                print(f"Set voltage for {bname} DAC to {actual_v:.8f} V")
             except ValueError:
                 print("Invalid voltage.")
         elif choice == "6":
