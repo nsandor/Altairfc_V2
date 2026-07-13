@@ -41,7 +41,7 @@ class Relay(IntEnum):
     ACF = 0x01
     IVC = 0x02
     TIA = 0x04
-    TIA_LOWGAIN = 0x08
+    TIA_LOWGAIN = 0x0C
 
 
 def _load_lib() -> ctypes.CDLL:

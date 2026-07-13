@@ -12,15 +12,15 @@ class IntegratorDriver:
 
     def __init__(self, io: MCP23017) -> None:
         self.io = io
-        self.PD_Reset = 4
-        self.IVC_SOLDIER_SW2 = 8
-        self.IVC_SOLDIER_SW1 = 7
+        self.PD_Reset = 3
+        self.IVC_SOLDIER_SW2 = 7
+        self.IVC_SOLDIER_SW1 = 6
 
-        self.IVC_SERGEANT_SW1 = 12
-        self.IVC_SERGEANT_SW2 = 13
+        self.IVC_SERGEANT_SW1 = 13
+        self.IVC_SERGEANT_SW2 = 12
 
         self.ACF_HOLD = 5
-        self.ACF_RESET = 6
+        self.ACF_RESET = 4
 
         # Configure pins as outputs
         for pin in [
@@ -51,20 +51,21 @@ class IntegratorDriver:
         for much better timing accuracy compared to setting one pin at a time.
         """
         # Port A (Pins 0-7)
-        mask_a = (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5)
-        val_a = (s2_sol << 2) | (s1_sol << 3) | (s1_serg << 4) | (s2_serg << 5)
+        mask_a = (1 << 4) | (1 << 5) | (1 << 6) | (1 << 7)
+        val_a = (acf_rst << 4) | (acf_hold << 5) | (s1_sol << 6) | (s2_sol << 7)
 
         # Port B (Pins 8-15 -> Bits 0-7 of Port B)
         mask_b = (1 << 4) | (1 << 5)
-        val_b = (acf_hold << 4) | (acf_rst << 5)
+        val_b = (s2_serg << 4) | (s1_serg << 5)
 
         # Modify shadows to keep state consistent
         self.io._gpio[0] = (self.io._gpio[0] & ~mask_a) | val_a
         self.io._gpio[1] = (self.io._gpio[1] & ~mask_b) | val_b
 
-        # Write directly to GPIOA (0x12) and GPIOB (0x13) to minimize I2C latency overhead
-        self.io._bus.write_byte_data(self.io._addr, 0x12, self.io._gpio[0])
-        self.io._bus.write_byte_data(self.io._addr, 0x13, self.io._gpio[1])
+        # Write both GPIOA (0x12) and GPIOB (0x13) in a single I2C transaction
+        # using block write to halve I2C latency overhead.
+        # This relies on the MCP23017's default IOCON.SEQOP=0 (auto-increment).
+        self.io._bus.write_i2c_block_data(self.io._addr, 0x12, [self.io._gpio[0], self.io._gpio[1]])
 
     def reset(self) -> None:
         """
@@ -74,19 +75,22 @@ class IntegratorDriver:
         """
         self._set_pins_fast(
             s1_sol=LOW,
-            s2_sol=HIGH,
+            s2_sol=LOW,
             s1_serg=LOW,
-            s2_serg=HIGH,
+            s2_serg=LOW,
             acf_hold=LOW,
-            acf_rst=HIGH,
+            acf_rst=LOW,
         )
 
-    def integrate_and_hold(self, time_us: float) -> None:
+    def integrate_and_hold(self, time_us: float) -> tuple[float, float]:
         """
         Integrate for time_us microseconds, and then hold.
         Uses busy waiting with time.perf_counter for the highest possible timing accuracy.
         Note: I2C write latency (typically ~100-300us depending on bus speed) will add
         some baseline delay to the exact moment integration starts and stops.
+
+        Returns:
+            tuple[float, float]: The exact start and end perf_counter timestamps.
         """
         wait_s = time_us / 1_000_000.0
 
@@ -94,15 +98,16 @@ class IntegratorDriver:
         # IVC102: SW1 closed, SW2 open.
         # ACF2101: HOLD low, RESET low.
         self._set_pins_fast(
-            s1_sol=HIGH,
-            s2_sol=LOW,
-            s1_serg=HIGH,
-            s2_serg=LOW,
+            s1_sol=LOW,
+            s2_sol=HIGH,
+            s1_serg=LOW,
+            s2_serg=HIGH,
             acf_hold=LOW,
-            acf_rst=LOW,
+            acf_rst=HIGH,
         )
 
-        target_time = time.perf_counter() + wait_s
+        t_start = time.perf_counter()
+        target_time = t_start + wait_s
 
         # Spin for the requested integration time
         while time.perf_counter() < target_time:
@@ -112,5 +117,18 @@ class IntegratorDriver:
         # IVC102: SW1 open, SW2 open.
         # ACF2101: HOLD high, RESET low.
         self._set_pins_fast(
-            s1_sol=LOW, s2_sol=LOW, s1_serg=LOW, s2_serg=LOW, acf_hold=HIGH, acf_rst=LOW
+            s1_sol=HIGH,
+            s2_sol=HIGH,
+            s1_serg=HIGH,
+            s2_serg=HIGH,
+            acf_hold=HIGH,
+            acf_rst=HIGH,
         )
+
+        t_end = time.perf_counter()
+        actual_time_us = (t_end - t_start) * 1_000_000.0
+        print(
+            f"Integration started at {t_start:.6f}s and ended at {t_end:.6f}s (Actual duration: {actual_time_us:.2f} us)"
+        )
+
+        return t_start, t_end
