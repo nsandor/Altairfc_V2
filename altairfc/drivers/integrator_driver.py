@@ -10,6 +10,8 @@ class IntegratorDriver:
     Pin mapping:
     """
 
+    ADC_ENABLE_SETTLE_S = 0.01
+
     def __init__(self, io: MCP23017) -> None:
         self.io = io
         self.PD_Reset = 3
@@ -35,7 +37,19 @@ class IntegratorDriver:
             self.io.set_output(pin)
 
         self.reset()
+        self.enable_adcs()
+
+    def enable_adcs(self) -> None:
+        """Enable the ADCs and wait before the first SPI transaction.
+
+        The ADC reset/enable line is hosted by the same MCP23017 as the
+        integrator controls. ADS124S08 communication must not start until this
+        line is high and its reset-release settling interval has elapsed.
+        """
         self.io.set(self.PD_Reset, HIGH)
+        if self.io.get(self.PD_Reset) != HIGH:
+            raise OSError("failed to drive the ADC reset/enable line high")
+        time.sleep(self.ADC_ENABLE_SETTLE_S)
 
     def _set_pins_fast(
         self,

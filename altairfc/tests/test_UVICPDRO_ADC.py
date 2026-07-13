@@ -17,14 +17,26 @@ from drivers.mcp23017 import MCP23017
 from drivers.integrator_driver import IntegratorDriver
 
 
-def open_boards(only, spi_dev, gpiochip, cs1, cs2, dac_cs1, dac_cs2):
+def open_boards(
+    only,
+    spi_dev,
+    gpiochip,
+    cs1,
+    cs2,
+    drdy1,
+    drdy2,
+    start1,
+    start2,
+    dac_cs1,
+    dac_cs2,
+):
     boards = []
     if only in (None, 1):
-        adc = ads124s08Driver(spi_dev, gpiochip, cs1)
+        adc = ads124s08Driver(spi_dev, gpiochip, cs1, drdy1, start1)
         dac = dac5311Driver(spi_dev, gpiochip, dac_cs1) if dac_cs1 is not None else None
         boards.append((f"Sergeant ADC (CS=GPIO{cs1})", adc, dac))
     if only in (None, 2):
-        adc = ads124s08Driver(spi_dev, gpiochip, cs2)
+        adc = ads124s08Driver(spi_dev, gpiochip, cs2, drdy2, start2)
         dac = dac5311Driver(spi_dev, gpiochip, dac_cs2) if dac_cs2 is not None else None
         boards.append((f"Soldier ADC (CS=GPIO{cs2})", adc, dac))
     return boards
@@ -471,29 +483,35 @@ if __name__ == "__main__":
         board_only = 2
 
     try:
+        mcp = MCP23017()
+        integrator = IntegratorDriver(mcp)
+    except Exception as e:
+        print(f"Failed to initialize IntegratorDriver: {e}")
+        sys.exit(1)
+
+    try:
         boards = open_boards(
             only=board_only,
             spi_dev="/dev/spidev0.0",
             gpiochip="gpiochip0",
             cs1=13,
             cs2=19,
+            drdy1=22,
+            drdy2=24,
+            start1=25,
+            start2=8,
             dac_cs1=12,
             dac_cs2=6,
         )
-    except OSError as e:
+    except (OSError, RuntimeError) as e:
         print(e)
+        integrator.io.close()
         sys.exit(1)
 
     if not boards:
         print("No boards opened.")
+        integrator.io.close()
         sys.exit(1)
-
-    try:
-        mcp = MCP23017()
-        integrator = IntegratorDriver(mcp)
-    except Exception as e:
-        print(f"Failed to initialize IntegratorDriver: {e}")
-        integrator = None
 
     try:
         interactive_menu(boards, integrator)

@@ -47,8 +47,21 @@ class Relay(IntEnum):
 def _load_lib() -> ctypes.CDLL:
     lib = ctypes.CDLL(str(_SO_PATH))
 
-    lib.ads124s08_open.restype = ctypes.c_void_p
-    lib.ads124s08_open.argtypes = [ctypes.c_char_p, ctypes.c_char_p, ctypes.c_uint]
+    try:
+        open_with_drdy_start = lib.ads124s08_open_with_drdy_start
+    except AttributeError as exc:
+        raise RuntimeError(
+            "libads124s08_driver.so does not support hardware DRDY/START; rebuild it with "
+            "drivers/build_ads124s08.sh"
+        ) from exc
+    open_with_drdy_start.restype = ctypes.c_void_p
+    open_with_drdy_start.argtypes = [
+        ctypes.c_char_p,
+        ctypes.c_char_p,
+        ctypes.c_uint,
+        ctypes.c_uint,
+        ctypes.c_uint,
+    ]
 
     lib.ads124s08_reset.restype = ctypes.c_int
     lib.ads124s08_reset.argtypes = [ctypes.c_void_p]
@@ -127,7 +140,13 @@ class ads124s08Driver:
     each conversion.
 
     Usage:
-        adc = ads124s08Driver("/dev/spidev0.0", "gpiochip0", cs_offset=17)
+        adc = ads124s08Driver(
+            "/dev/spidev0.0",
+            "gpiochip0",
+            cs_offset=13,
+            drdy_offset=22,
+            start_offset=25,
+        )
         adc.configure()
         pd_v = adc.read_voltage()
         board_tmp = adc.read_board_thermistor()
@@ -137,17 +156,39 @@ class ads124s08Driver:
     needed, unlike the MCP4728 driver's LDAC pin.
     """
 
-    def __init__(self, spi_dev: str, gpiochip: str, cs_offset: int) -> None:
+    def __init__(
+        self,
+        spi_dev: str,
+        gpiochip: str,
+        cs_offset: int,
+        drdy_offset: int,
+        start_offset: int,
+    ) -> None:
         self._lib = _load_lib()
-        self._handle = self._lib.ads124s08_open(
-            spi_dev.encode(), gpiochip.encode(), cs_offset
+        self._handle = self._lib.ads124s08_open_with_drdy_start(
+            spi_dev.encode(),
+            gpiochip.encode(),
+            cs_offset,
+            drdy_offset,
+            start_offset,
         )
         if not self._handle:
             raise OSError(
-                f"ads124s08_open failed on {spi_dev} (CS {gpiochip}:{cs_offset}) — "
-                "check SPI bus, gpiochip name, and CS line number"
+                f"ads124s08_open_with_drdy_start failed on {spi_dev} "
+                f"(CS {gpiochip}:{cs_offset}, DRDY {gpiochip}:{drdy_offset}, "
+                f"START {gpiochip}:{start_offset}) — "
+                "check the SPI bus and GPIO line assignments"
             )
-        logger.info("ads124s08Driver: opened %s CS=%s:%d", spi_dev, gpiochip, cs_offset)
+        logger.info(
+            "ads124s08Driver: opened %s CS=%s:%d DRDY=%s:%d START=%s:%d",
+            spi_dev,
+            gpiochip,
+            cs_offset,
+            gpiochip,
+            drdy_offset,
+            gpiochip,
+            start_offset,
+        )
         if self._lib.ads124s08_reset(self._handle) != 0:
             logger.warning("ads124s08Driver: reset SPI error")
 
@@ -191,16 +232,22 @@ class ads124s08Driver:
     def _read_single_shot_raw(self) -> int | None:
         code = ctypes.c_int32()
         ret = self._lib.ads124s08_read_single_shot(self._handle, ctypes.byref(code))
+        if ret == -2:
+            logger.warning("ads124s08Driver: timed out waiting for DRDY")
+            return None
         if ret != 0:
-            logger.warning("ads124s08Driver: read_single_shot SPI error")
+            logger.warning("ads124s08Driver: read_single_shot SPI/GPIO error")
             return None
         return code.value
 
     def _read_single_shot_volts(self) -> float | None:
         code = ctypes.c_int32()
         ret = self._lib.ads124s08_read_single_shot(self._handle, ctypes.byref(code))
+        if ret == -2:
+            logger.warning("ads124s08Driver: timed out waiting for DRDY")
+            return None
         if ret != 0:
-            logger.warning("ads124s08Driver: read_single_shot SPI error")
+            logger.warning("ads124s08Driver: read_single_shot SPI/GPIO error")
             return None
         return self._lib.ads124s08_code_to_volts(code.value)
 

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
@@ -15,7 +16,6 @@
 #define CMD_WAKEUP     0x02
 #define CMD_POWERDOWN  0x04
 #define CMD_RESET      0x06
-#define CMD_START      0x08
 #define CMD_STOP       0x0A
 
 #define CMD_RDATA      0x12
@@ -86,13 +86,18 @@
 #define T0_KELVIN 298.15
 
 
-/* Data rate settle time: ~1.5x period for 20 SPS default, generous margin */
-#define SETTLE_NS   (long)((1.0 / 20.0) * 1.5 * 1e9)
+/* Conversion completion comes from DRDY. This fixed timeout only protects
+ * against a disconnected or failed DRDY signal. */
+#define DRDY_TIMEOUT_SEC 10
+#define ERR_DRDY_TIMEOUT -2
+#define START_LOW_PULSE_NS 10000L
 
 typedef struct {
     int fd_spi;
     struct gpiod_chip *chip;
     struct gpiod_line *cs_line;
+    struct gpiod_line *drdy_line;
+    struct gpiod_line *start_line;
 } ads124s08;
 
 /* ------------------------------------------------------------------ */
@@ -101,6 +106,55 @@ typedef struct {
 
 static void cs_low(ads124s08 *dev)  { gpiod_line_set_value(dev->cs_line, 0); }
 static void cs_high(ads124s08 *dev) { gpiod_line_set_value(dev->cs_line, 1); }
+
+static int drain_drdy_events(ads124s08 *dev)
+{
+    const struct timespec no_wait = { .tv_sec = 0, .tv_nsec = 0 };
+
+    for (;;) {
+        int ret = gpiod_line_event_wait(dev->drdy_line, &no_wait);
+        if (ret == 0) return 0;
+        if (ret < 0) {
+            if (errno == EINTR) continue;
+            return -1;
+        }
+
+        struct gpiod_line_event event;
+        if (gpiod_line_event_read(dev->drdy_line, &event) < 0) return -1;
+    }
+}
+
+static int wait_for_drdy(ads124s08 *dev)
+{
+    struct timespec timeout = { .tv_sec = DRDY_TIMEOUT_SEC, .tv_nsec = 0 };
+    int ret;
+
+    do {
+        ret = gpiod_line_event_wait(dev->drdy_line, &timeout);
+    } while (ret < 0 && errno == EINTR);
+
+    if (ret == 0) return ERR_DRDY_TIMEOUT;
+    if (ret < 0) return -1;
+
+    /* Consume the event so the next conversion waits for its own edge. */
+    struct gpiod_line_event event;
+    if (gpiod_line_event_read(dev->drdy_line, &event) < 0) return -1;
+    return 0;
+}
+
+static int start_conversion(ads124s08 *dev)
+{
+    /* In single-shot mode each conversion begins on a START/SYNC rising edge.
+     * Pull low long enough to satisfy the synchronization pulse-width timing,
+     * then leave START high until the next conversion. */
+    if (gpiod_line_set_value(dev->start_line, 0) < 0) return -1;
+    const struct timespec pulse = {
+        .tv_sec = 0,
+        .tv_nsec = START_LOW_PULSE_NS,
+    };
+    nanosleep(&pulse, NULL);
+    return gpiod_line_set_value(dev->start_line, 1) < 0 ? -1 : 0;
+}
 
 static int spi_xfer(ads124s08 *dev, uint8_t *buf, int len)
 {
@@ -126,16 +180,19 @@ static int spi_xfer(ads124s08 *dev, uint8_t *buf, int len)
 
 /*
  * Open an ads124s08 on the given spidev node, with CS manually driven on
- * gpiochip_name/cs_offset (e.g. "gpiochip0", 17 for BCM GPIO17).
+ * gpiochip_name/cs_offset and conversion-ready events on drdy_offset.
  * Returns a heap-allocated handle, or NULL on failure.
  */
-ads124s08 *ads124s08_open(const char *spi_dev, const char *gpiochip_name, unsigned int cs_offset)
+ads124s08 *ads124s08_open_with_drdy_start(
+    const char *spi_dev,
+    const char *gpiochip_name,
+    unsigned int cs_offset,
+    unsigned int drdy_offset,
+    unsigned int start_offset)
 {
-    ads124s08 *dev = (ads124s08 *)malloc(sizeof(ads124s08));
+    ads124s08 *dev = (ads124s08 *)calloc(1, sizeof(ads124s08));
     if (!dev) return NULL;
     dev->fd_spi = -1;
-    dev->chip = NULL;
-    dev->cs_line = NULL;
 
     dev->fd_spi = open(spi_dev, O_RDWR);
     if (dev->fd_spi < 0) {
@@ -171,6 +228,47 @@ ads124s08 *ads124s08_open(const char *spi_dev, const char *gpiochip_name, unsign
 
     /* Request as output, idle high (CS is active-low) */
     if (gpiod_line_request_output(dev->cs_line, "ads124s08", 1) < 0) {
+        gpiod_chip_close(dev->chip);
+        close(dev->fd_spi);
+        free(dev);
+        return NULL;
+    }
+
+    dev->drdy_line = gpiod_chip_get_line(dev->chip, drdy_offset);
+    if (!dev->drdy_line) {
+        gpiod_line_release(dev->cs_line);
+        gpiod_chip_close(dev->chip);
+        close(dev->fd_spi);
+        free(dev);
+        return NULL;
+    }
+
+    /* DRDY is active-low. A falling edge remains queued if a fast
+     * conversion finishes before wait_for_drdy() starts waiting. */
+    if (gpiod_line_request_falling_edge_events(
+            dev->drdy_line, "ads124s08-drdy") < 0) {
+        gpiod_line_release(dev->cs_line);
+        gpiod_chip_close(dev->chip);
+        close(dev->fd_spi);
+        free(dev);
+        return NULL;
+    }
+
+    dev->start_line = gpiod_chip_get_line(dev->chip, start_offset);
+    if (!dev->start_line) {
+        gpiod_line_release(dev->drdy_line);
+        gpiod_line_release(dev->cs_line);
+        gpiod_chip_close(dev->chip);
+        close(dev->fd_spi);
+        free(dev);
+        return NULL;
+    }
+
+    /* Idle low ensures the first high transition starts a conversion. */
+    if (gpiod_line_request_output(
+            dev->start_line, "ads124s08-start", 0) < 0) {
+        gpiod_line_release(dev->drdy_line);
+        gpiod_line_release(dev->cs_line);
         gpiod_chip_close(dev->chip);
         close(dev->fd_spi);
         free(dev);
@@ -263,22 +361,21 @@ int ads124s08_read_config(ads124s08 *dev, uint8_t out_regs[5])
 /*
  * Trigger a single-shot conversion and read back the signed 24-bit result.
  *
- * NOTE: not DRDY-driven — issues START, sleeps a fixed margin sized for
- * the 20 SPS config above, then issues RDATA once. Simple and matches
- * this driver's fixed data rate; wire DRDY to a GPIO and poll it instead
- * if more robust timing is ever needed.
- *
  * Returns  0: success, *out_code populated (sign-extended)
- *         -1: SPI error
+ *         -1: SPI or GPIO error
+ *         -2: DRDY timeout
  */
 
 int ads124s08_read_single_shot(ads124s08 *dev, int32_t *out_code)
 {
-    uint8_t start_buf[1] = { CMD_START };
-    if (spi_xfer(dev, start_buf, 1) < 0) return -1;
+    /* RESET and register writes can also change DRDY. Discard those events so
+     * the edge below can only belong to the conversion we are about to start. */
+    if (drain_drdy_events(dev) < 0) return -1;
 
-    struct timespec ts = { .tv_sec = 0, .tv_nsec = SETTLE_NS };
-    nanosleep(&ts, NULL);
+    if (start_conversion(dev) < 0) return -1;
+
+    int ready = wait_for_drdy(dev);
+    if (ready != 0) return ready;
 
     uint8_t buf[4] = { CMD_RDATA, 0x00, 0x00, 0x00 };
     if (spi_xfer(dev, buf, 4) < 0) return -1;
@@ -330,6 +427,11 @@ void ads124s08_close(ads124s08 *dev)
     if (dev->cs_line) {
         cs_high(dev);
         gpiod_line_release(dev->cs_line);
+    }
+    if (dev->drdy_line) gpiod_line_release(dev->drdy_line);
+    if (dev->start_line) {
+        gpiod_line_set_value(dev->start_line, 0);
+        gpiod_line_release(dev->start_line);
     }
     if (dev->chip) gpiod_chip_close(dev->chip);
     if (dev->fd_spi >= 0) close(dev->fd_spi);

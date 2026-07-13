@@ -37,13 +37,14 @@ if TYPE_CHECKING:
 SPI_DEVICE = "/dev/spidev0.0"
 GPIO_CHIP = "gpiochip0"
 BOARD_CONFIG = {
-    # name, ADC chip select, bias DAC chip select
-    "sgt": ("sgt", 13, 12),
-    "sol": ("sol", 19, 6),
+    # name, ADC chip select, ADC DRDY, ADC START, bias DAC chip select
+    "sgt": ("sgt", 13, 22, 25, 12),
+    "sol": ("sol", 19, 24, 8, 6),
 }
 DEFAULT_INTEGRATION_US = 1000.0
 
 CHANNEL_ALIASES = {
+    "vgnd": "VGND",
     "tia": "TIA",
     "tia_lowgain": "TIA_LOWGAIN",
     "tia_low_gain": "TIA_LOWGAIN",
@@ -56,6 +57,7 @@ CHANNEL_ALIASES = {
     "diode_temperature": "DIODE_TEMP",
 }
 CHANNEL_MUX = {
+    "VGND": Mux.VGND,
     "TIA": Mux.TIA,
     "TIA_LOWGAIN": Mux.TIA,
     "ACF": Mux.ACF,
@@ -107,7 +109,7 @@ def parse_channel(value: str) -> str:
         return CHANNEL_ALIASES[key]
     except KeyError as exc:
         raise argparse.ArgumentTypeError(
-            "unknown channel {!r}; choose from TIA, TIA_LOWGAIN, ACF, IVC, "
+            "unknown channel {!r}; choose from VGND, TIA, TIA_LOWGAIN, ACF, IVC, "
             "board_temp, diode_temp".format(value)
         ) from exc
 
@@ -136,11 +138,13 @@ def open_boards(selection: str, requested_bias_voltage_v: float) -> list[Board]:
     boards: list[Board] = []
     try:
         for key in names:
-            name, adc_cs_pin, dac_cs_pin = BOARD_CONFIG[key]
+            name, adc_cs_pin, drdy_pin, start_pin, dac_cs_pin = BOARD_CONFIG[key]
             adc = None
             dac = None
             try:
-                adc = ads124s08Driver(SPI_DEVICE, GPIO_CHIP, adc_cs_pin)
+                adc = ads124s08Driver(
+                    SPI_DEVICE, GPIO_CHIP, adc_cs_pin, drdy_pin, start_pin
+                )
                 dac = dac5311Driver(SPI_DEVICE, GPIO_CHIP, dac_cs_pin)
                 applied_bias_voltage_v = dac.set_voltage(requested_bias_voltage_v)
                 boards.append(Board(name, adc, dac, applied_bias_voltage_v))
@@ -203,6 +207,7 @@ def write_reading(
     applied_bias_voltage_v: float,
     requested_integration_us: float | None = None,
     measured_integration_us: float | None = None,
+    print_terminal: bool = True,
 ) -> None:
     now = datetime.now(timezone.utc)
     elapsed_s = time.perf_counter() - started_at
@@ -219,24 +224,86 @@ def write_reading(
             "" if reading.adc_voltage_v is None else f"{reading.adc_voltage_v:.9g}",
             "" if reading.value is None else f"{reading.value:.9g}",
             reading.unit,
-            "" if requested_integration_us is None else f"{requested_integration_us:.3f}",
+            (
+                ""
+                if requested_integration_us is None
+                else f"{requested_integration_us:.3f}"
+            ),
             "" if measured_integration_us is None else f"{measured_integration_us:.3f}",
         ]
     )
     csv_file.flush()
 
-    value = "READ ERROR" if reading.value is None else f"{reading.value:.8f} {reading.unit}"
-    integration = (
-        ""
-        if measured_integration_us is None
-        else f"  integration={measured_integration_us:.2f} us"
-    )
-    bias = f"  bias={applied_bias_voltage_v:.5f} V"
-    print(
-        f"{now.isoformat(timespec='milliseconds')}  {board_name:3}  "
-        f"{channel:12}  {value}{bias}{integration}",
-        flush=True,
-    )
+    if print_terminal:
+        value = (
+            "READ ERROR"
+            if reading.value is None
+            else f"{reading.value:.8f} {reading.unit}"
+        )
+        integration = (
+            ""
+            if measured_integration_us is None
+            else f"  integration={measured_integration_us:.2f} us"
+        )
+        bias = f"  bias={applied_bias_voltage_v:.5f} V"
+        print(
+            f"{now.isoformat(timespec='milliseconds')}  {board_name:3}  "
+            f"{channel:12}  {value}{bias}{integration}",
+            flush=True,
+        )
+
+
+def render_live_dashboard(
+    boards: list[Board],
+    channels: list[str],
+    latest: dict[tuple[str, str], tuple[Reading, float | None]],
+    sample_number: int,
+    total_samples: int,
+    data_rate: DataRate,
+    output_path: Path,
+) -> None:
+    target = "infinite" if total_samples == 0 else str(total_samples)
+    lines = [
+        "UVIC PDRO CALIBRATION — LIVE",
+        f"Sample {sample_number} / {target}    Rate: {data_rate.name}",
+        f"CSV: {output_path.resolve()}",
+        "",
+        f"{'BOARD':<6} {'CHANNEL':<13} {'VALUE':>17} {'ADC VOLTAGE':>15} "
+        f"{'RAW CODE':>11} {'BIAS':>11} {'INTEGRATION':>15}",
+        "-" * 96,
+    ]
+
+    for board in boards:
+        for channel in channels:
+            current = latest.get((board.name, channel))
+            if current is None:
+                value = adc_voltage = raw_code = integration = "—"
+            else:
+                reading, measured_integration_us = current
+                value = (
+                    "READ ERROR"
+                    if reading.value is None
+                    else f"{reading.value:.8f} {reading.unit}"
+                )
+                adc_voltage = (
+                    "—"
+                    if reading.adc_voltage_v is None
+                    else f"{reading.adc_voltage_v:.8f} V"
+                )
+                raw_code = "—" if reading.raw_code is None else str(reading.raw_code)
+                integration = (
+                    "—"
+                    if measured_integration_us is None
+                    else f"{measured_integration_us:.2f} us"
+                )
+            lines.append(
+                f"{board.name:<6} {channel:<13} {value:>17} {adc_voltage:>15} "
+                f"{raw_code:>11} {board.applied_bias_voltage_v:>9.5f} V "
+                f"{integration:>15}"
+            )
+
+    lines.extend(["", "Ctrl+C to stop safely and reset bias to 0 V."])
+    print("\033[H" + "\n".join(lines) + "\033[J", end="", flush=True)
 
 
 def stream(
@@ -248,6 +315,7 @@ def stream(
     samples: int,
     output_path: Path,
     integrator: IntegratorDriver | None,
+    live_display: bool = False,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("x", newline="", encoding="utf-8") as csv_file:
@@ -272,7 +340,11 @@ def stream(
         csv_file.flush()
 
         started_at = time.perf_counter()
-        print(f"Streaming to {output_path.resolve()} (Ctrl+C to stop)")
+        latest: dict[tuple[str, str], tuple[Reading, float | None]] = {}
+        if live_display:
+            print("\033[2J\033[H", end="", flush=True)
+        else:
+            print(f"Streaming to {output_path.resolve()} (Ctrl+C to stop)")
         completed_samples = 0
         while samples == 0 or completed_samples < samples:
             for channel in channels:
@@ -307,7 +379,19 @@ def stream(
                             board.applied_bias_voltage_v,
                             requested_us,
                             measured_us,
+                            print_terminal=not live_display,
                         )
+                        if live_display:
+                            latest[(board.name, channel)] = (reading, measured_us)
+                            render_live_dashboard(
+                                boards,
+                                channels,
+                                latest,
+                                completed_samples + 1,
+                                samples,
+                                data_rate,
+                                output_path,
+                            )
                 finally:
                     if channel in INTEGRATOR_CHANNELS and integrator is not None:
                         integrator.reset()
@@ -341,7 +425,7 @@ def build_parser() -> argparse.ArgumentParser:
         nargs="+",
         type=parse_channel,
         metavar="CHANNEL",
-        help="one or more of: TIA TIA_LOWGAIN ACF IVC board_temp diode_temp",
+        help="one or more of: VGND TIA TIA_LOWGAIN ACF IVC board_temp diode_temp",
     )
     parser.add_argument(
         "-v",
@@ -377,6 +461,12 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="COUNT",
         help="number of complete channel/board sampling passes; 0 means infinite (default: 0)",
     )
+    parser.add_argument(
+        "--live-display",
+        "--live",
+        action="store_true",
+        help="refresh a readable dashboard in place instead of printing machine-readable rows",
+    )
     return parser
 
 
@@ -394,20 +484,27 @@ def main() -> int:
 
     # Preserve the requested order but avoid sampling a repeated channel twice.
     channels = list(dict.fromkeys(args.channels))
-    needs_integrator = any(channel in INTEGRATOR_CHANNELS for channel in channels)
     output_path = args.output or default_output_path()
+    live_display = args.live_display and sys.stdout.isatty()
+    if args.live_display and not live_display:
+        print(
+            "warning: --live-display requires a terminal; using line output",
+            file=sys.stderr,
+        )
 
     boards: list[Board] = []
-    integrator: IntegratorDriver | None = None
-    try:
-        boards = open_boards(args.boards, args.bias_voltage)
-        if needs_integrator:
-            # These imports require the Pi's smbus2 package, so keep them out of
-            # non-hardware paths such as --help and parser tests.
-            from drivers.integrator_driver import IntegratorDriver
-            from drivers.mcp23017 import MCP23017
+    from drivers.integrator_driver import IntegratorDriver
+    from drivers.mcp23017 import MCP23017
 
-            integrator = IntegratorDriver(MCP23017())
+    io = None
+    integrator = None
+    try:
+        # The MCP23017 owns the ADC reset/enable line. IntegratorDriver drives
+        # it high, verifies it, and observes the reset-release delay before any
+        # ads124s08Driver constructor is allowed to issue SPI commands.
+        io = MCP23017()
+        integrator = IntegratorDriver(io)
+        boards = open_boards(args.boards, args.bias_voltage)
         stream(
             boards,
             channels,
@@ -417,6 +514,7 @@ def main() -> int:
             args.samples,
             output_path,
             integrator,
+            live_display,
         )
     except KeyboardInterrupt:
         print("\nStopped; all completed measurements are saved.")
@@ -428,8 +526,12 @@ def main() -> int:
             if integrator is not None:
                 integrator.reset()
                 integrator.io.close()
+            elif io is not None:
+                io.close()
         except Exception as exc:
-            print(f"warning: failed to close integrator cleanly: {exc}", file=sys.stderr)
+            print(
+                f"warning: failed to close integrator cleanly: {exc}", file=sys.stderr
+            )
         for board in boards:
             try:
                 close_board(board)
