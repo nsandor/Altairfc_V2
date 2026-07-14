@@ -3,14 +3,14 @@
 Examples (run from ``altairfc``):
 
     python tests/stream_UVICPDRO_calibration.py -b both -r SPS_100 -c TIA board_temp -v 2.5
+    python tests/stream_UVICPDRO_calibration.py -b both -r SPS_1000 -r2 SPS_100 -c TIA VGND board_temp -v 2.5
     python tests/stream_UVICPDRO_calibration.py -b sgt -r SPS_1000 -c ACF IVC -i 500 -v 3.0
 
 Sampling continues until Ctrl+C.  Every measurement is printed and flushed to
 the CSV immediately so that data already collected survives an interrupted run.
-Each row also records the synchronized ADS1115 AIN2-AIN3 LED thermistor bridge
-raw code, differential voltage, resistance, and interpreted temperature. With
-``--ads1115-current``, AIN0 is also logged as voltage and current through the
-2.2 ohm current-monitoring resistor.
+Select ``bridge_temp`` and/or ``current`` with ``-c`` to stream the ADS1115
+AIN2-AIN3 thermistor bridge temperature and AIN0 current through the 2.2 ohm
+current-monitoring resistor alongside the UVIC PDRO channels.
 """
 
 from __future__ import annotations
@@ -51,6 +51,7 @@ DEFAULT_INTEGRATION_US = 1000.0
 # LED-driver thermistor bridge (ADS1115 AIN2-AIN3).  The bridge has three
 # fixed 10 kohm legs and one 10 kohm NTC, and is excited from 3.3 V.
 ADS1115_ADDR = 0x4A
+ADS1115_BUS = 1
 ADS1115_REG_CONVERSION = 0x00
 ADS1115_REG_CONFIG = 0x01
 ADS1115_MUX_DIFF_2_3 = 0b011
@@ -71,6 +72,8 @@ THERMISTOR_R25_OHM = 10000.0
 THERMISTOR_B_K = 3380.0
 THERMISTOR_T0_K = 298.15
 CURRENT_SENSE_RESISTOR_OHM = 2.2
+ADS1115_BRIDGE_GAIN = 2
+ADS1115_CURRENT_GAIN = 2
 
 CHANNEL_ALIASES = {
     "vgnd": "VGND",
@@ -84,6 +87,13 @@ CHANNEL_ALIASES = {
     "diode_temp": "DIODE_TEMP",
     "pd_temp": "DIODE_TEMP",
     "diode_temperature": "DIODE_TEMP",
+    "bridge_temp": "BRIDGE_TEMP",
+    "bridge_temperature": "BRIDGE_TEMP",
+    "thermistor": "BRIDGE_TEMP",
+    "led_temp": "BRIDGE_TEMP",
+    "current": "CURRENT",
+    "current_monitor": "CURRENT",
+    "led_current": "CURRENT",
 }
 CHANNEL_MUX = {
     "VGND": Mux.VGND,
@@ -101,6 +111,8 @@ CHANNEL_RELAY = {
     "IVC": Relay.IVC.value,
 }
 INTEGRATOR_CHANNELS = {"ACF", "IVC"}
+ADS1115_CHANNELS = {"BRIDGE_TEMP", "CURRENT"}
+PRIORITY_CHANNELS = {"TIA", "TIA_LOWGAIN", "IVC", "ACF"}
 
 
 @dataclass
@@ -269,32 +281,8 @@ def parse_channel(value: str) -> str:
     except KeyError as exc:
         raise argparse.ArgumentTypeError(
             "unknown channel {!r}; choose from VGND, TIA, TIA_LOWGAIN, ACF, IVC, "
-            "board_temp, diode_temp".format(value)
+            "board_temp, diode_temp, bridge_temp, current".format(value)
         ) from exc
-
-
-def parse_int_auto(value: str) -> int:
-    """Parse a decimal or 0x-prefixed integer for hardware addresses."""
-    try:
-        return int(value, 0)
-    except ValueError as exc:
-        raise argparse.ArgumentTypeError(f"invalid integer: {value!r}") from exc
-
-
-def i2c_bus_number(device: str) -> int:
-    """Accept either an I2C bus number or a /dev/i2c-N device path."""
-    value = device.strip()
-    if value.startswith("/dev/i2c-"):
-        value = value.removeprefix("/dev/i2c-")
-    try:
-        bus_number = int(value)
-    except ValueError as exc:
-        raise ValueError(
-            f"invalid I2C bus {device!r}; use a number or /dev/i2c-N"
-        ) from exc
-    if bus_number < 0:
-        raise ValueError("I2C bus number must be zero or greater")
-    return bus_number
 
 
 def default_output_path() -> Path:
@@ -384,16 +372,15 @@ def write_reading(
     started_at: float,
     board_name: str,
     channel: str,
-    data_rate: DataRate,
+    data_rate: DataRate | None,
     reading: Reading,
     requested_bias_voltage_v: float,
-    applied_bias_voltage_v: float,
+    applied_bias_voltage_v: float | None,
     requested_integration_us: float | None = None,
     measured_integration_us: float | None = None,
     print_terminal: bool = True,
     bridge_reading: BridgeReading = BRIDGE_READ_ERROR,
     current_reading: CurrentReading = CURRENT_READ_ERROR,
-    show_ads1115_current: bool = False,
 ) -> None:
     now = datetime.now(timezone.utc)
     elapsed_s = time.perf_counter() - started_at
@@ -403,9 +390,13 @@ def write_reading(
             f"{elapsed_s:.6f}",
             board_name,
             channel,
-            data_rate.name,
+            "" if data_rate is None else data_rate.name,
             f"{requested_bias_voltage_v:.9g}",
-            f"{applied_bias_voltage_v:.9g}",
+            (
+                ""
+                if applied_bias_voltage_v is None
+                else f"{applied_bias_voltage_v:.9g}"
+            ),
             "" if reading.raw_code is None else reading.raw_code,
             "" if reading.adc_voltage_v is None else f"{reading.adc_voltage_v:.9g}",
             "" if reading.value is None else f"{reading.value:.9g}",
@@ -458,23 +449,20 @@ def write_reading(
             if measured_integration_us is None
             else f"  integration={measured_integration_us:.2f} us"
         )
-        bias = f"  bias={applied_bias_voltage_v:.5f} V"
-        bridge_temperature = (
-            "  led_bridge_temp=N/A"
-            if bridge_reading.temperature_c is None
-            else f"  led_bridge_temp={bridge_reading.temperature_c:.2f} C"
+        bias = (
+            ""
+            if applied_bias_voltage_v is None
+            else f"  bias={applied_bias_voltage_v:.5f} V"
         )
-        ads1115_current = ""
-        if show_ads1115_current:
-            ads1115_current = (
-                "  led_current=N/A"
-                if current_reading.current_a is None
-                else f"  led_current={current_reading.current_a:.6f} A"
-            )
+        details = ""
+        if channel == "BRIDGE_TEMP" and bridge_reading.resistance_ohm is not None:
+            details = f"  resistance={bridge_reading.resistance_ohm:.1f} ohm"
+        elif channel == "CURRENT" and current_reading.voltage_v is not None:
+            details = f"  ain0={current_reading.voltage_v:.6f} V"
+        rate = "" if data_rate is None else f"  rate={data_rate.name}"
         print(
             f"{now.isoformat(timespec='milliseconds')}  {board_name:3}  "
-            f"{channel:12}  {value}{bias}{integration}{bridge_temperature}"
-            f"{ads1115_current}",
+            f"{channel:12}  {value}{bias}{integration}{rate}{details}",
             flush=True,
         )
 
@@ -490,26 +478,31 @@ def render_live_dashboard(
     total_samples: int,
     data_rate: DataRate,
     output_path: Path,
-    show_ads1115_current: bool = False,
+    secondary_data_rate: DataRate | None = None,
 ) -> None:
     target = "infinite" if total_samples == 0 else str(total_samples)
     lines = [
         "UVIC PDRO CALIBRATION — LIVE",
-        f"Sample {sample_number} / {target}    Rate: {data_rate.name}",
+        f"Sample {sample_number} / {target}    Primary rate: {data_rate.name}"
+        + (
+            ""
+            if secondary_data_rate is None
+            else f"    Secondary rate: {secondary_data_rate.name}"
+        ),
         f"CSV: {output_path.resolve()}",
         "",
-        f"{'BOARD':<6} {'CHANNEL':<13} {'VALUE':>17} {'ADC VOLTAGE':>15} "
-        f"{'RAW CODE':>11} {'BIAS':>11} {'INTEGRATION':>15} {'LED TEMP':>12}"
-        + (f" {'LED CURRENT':>13}" if show_ads1115_current else ""),
-        "-" * (123 if show_ads1115_current else 109),
+        f"{'BOARD':<8} {'CHANNEL':<13} {'RATE':<11} {'VALUE':>17} {'ADC VOLTAGE':>15} "
+        f"{'RAW CODE':>11} {'BIAS':>11} {'INTEGRATION':>15}",
+        "-" * 110,
     ]
 
     for board in boards:
         for channel in channels:
-            current = latest.get((board.name, channel))
+            if channel in ADS1115_CHANNELS and board is not boards[0]:
+                continue
+            source_name = "ads1115" if channel in ADS1115_CHANNELS else board.name
+            current = latest.get((source_name, channel))
             if current is None:
-                bridge_temperature = "--"
-                ads1115_current = "--"
                 value = adc_voltage = raw_code = integration = "—"
             else:
                 (
@@ -534,21 +527,25 @@ def render_live_dashboard(
                     if measured_integration_us is None
                     else f"{measured_integration_us:.2f} us"
                 )
-                bridge_temperature = (
-                    "N/A"
-                    if bridge_reading.temperature_c is None
-                    else f"{bridge_reading.temperature_c:.2f} C"
+            bias = (
+                "--"
+                if channel in ADS1115_CHANNELS
+                else f"{board.applied_bias_voltage_v:.5f} V"
+            )
+            channel_rate = (
+                "128_SPS"
+                if channel in ADS1115_CHANNELS
+                else (
+                    secondary_data_rate.name
+                    if secondary_data_rate is not None
+                    and channel not in PRIORITY_CHANNELS
+                    else data_rate.name
                 )
-                ads1115_current = (
-                    "N/A"
-                    if current_reading.current_a is None
-                    else f"{current_reading.current_a:.6f} A"
-                )
+            )
             lines.append(
-                f"{board.name:<6} {channel:<13} {value:>17} {adc_voltage:>15} "
-                f"{raw_code:>11} {board.applied_bias_voltage_v:>9.5f} V "
-                f"{integration:>15} {bridge_temperature:>12}"
-                + (f" {ads1115_current:>13}" if show_ads1115_current else "")
+                f"{source_name:<8} {channel:<13} {channel_rate:<11} "
+                f"{value:>17} {adc_voltage:>15} "
+                f"{raw_code:>11} {bias:>11} {integration:>15}"
             )
 
     lines.extend(["", "Ctrl+C to stop safely and reset bias to 0 V."])
@@ -566,8 +563,7 @@ def stream(
     integrator: IntegratorDriver | None,
     live_display: bool = False,
     bridge_monitor: Ads1115BridgeMonitor | None = None,
-    measure_bridge_temperature: bool = True,
-    measure_ads1115_current: bool = False,
+    secondary_data_rate: DataRate | None = None,
 ) -> None:
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with output_path.open("x", newline="", encoding="utf-8") as csv_file:
@@ -610,7 +606,81 @@ def stream(
         completed_samples = 0
         while samples == 0 or completed_samples < samples:
             for channel in channels:
-                configure_boards(boards, channel, data_rate)
+                if channel in ADS1115_CHANNELS:
+                    if bridge_monitor is None:
+                        raise RuntimeError("ADS1115 monitor is required for this channel")
+
+                    bridge_reading = BRIDGE_READ_ERROR
+                    current_reading = CURRENT_READ_ERROR
+                    try:
+                        if channel == "BRIDGE_TEMP":
+                            bridge_reading = bridge_monitor.read()
+                            reading = Reading(
+                                bridge_reading.raw_code,
+                                bridge_reading.differential_voltage_v,
+                                bridge_reading.temperature_c,
+                                "C",
+                            )
+                        else:
+                            current_reading = bridge_monitor.read_current()
+                            reading = Reading(
+                                current_reading.raw_code,
+                                current_reading.voltage_v,
+                                current_reading.current_a,
+                                "A",
+                            )
+                    except (OSError, TimeoutError) as exc:
+                        print(
+                            f"warning: ADS1115 {channel} read failed: {exc}",
+                            file=sys.stderr,
+                        )
+                        reading = Reading(
+                            None,
+                            None,
+                            None,
+                            "C" if channel == "BRIDGE_TEMP" else "A",
+                        )
+
+                    write_reading(
+                        writer,
+                        csv_file,
+                        started_at,
+                        "ads1115",
+                        channel,
+                        None,
+                        reading,
+                        requested_bias_voltage_v,
+                        None,
+                        print_terminal=not live_display,
+                        bridge_reading=bridge_reading,
+                        current_reading=current_reading,
+                    )
+                    if live_display:
+                        latest[("ads1115", channel)] = (
+                            reading,
+                            None,
+                            bridge_reading,
+                            current_reading,
+                        )
+                        render_live_dashboard(
+                            boards,
+                            channels,
+                            latest,
+                            completed_samples + 1,
+                            samples,
+                            data_rate,
+                            output_path,
+                            secondary_data_rate,
+                        )
+                    continue
+
+                channel_data_rate = (
+                    secondary_data_rate
+                    if secondary_data_rate is not None
+                    and channel not in PRIORITY_CHANNELS
+                    else data_rate
+                )
+                configure_boards(boards, channel, channel_data_rate)
 
                 requested_us = None
                 measured_us = None
@@ -629,23 +699,7 @@ def stream(
                 try:
                     for board in boards:
                         bridge_reading = BRIDGE_READ_ERROR
-                        if bridge_monitor is not None and measure_bridge_temperature:
-                            try:
-                                bridge_reading = bridge_monitor.read()
-                            except (OSError, TimeoutError) as exc:
-                                print(
-                                    f"warning: ADS1115 bridge temperature read failed: {exc}",
-                                    file=sys.stderr,
-                                )
                         current_reading = CURRENT_READ_ERROR
-                        if bridge_monitor is not None and measure_ads1115_current:
-                            try:
-                                current_reading = bridge_monitor.read_current()
-                            except (OSError, TimeoutError) as exc:
-                                print(
-                                    f"warning: ADS1115 current read failed: {exc}",
-                                    file=sys.stderr,
-                                )
                         reading = read_channel(board.adc, channel)
                         write_reading(
                             writer,
@@ -653,7 +707,7 @@ def stream(
                             started_at,
                             board.name,
                             channel,
-                            data_rate,
+                            channel_data_rate,
                             reading,
                             requested_bias_voltage_v,
                             board.applied_bias_voltage_v,
@@ -662,7 +716,6 @@ def stream(
                             print_terminal=not live_display,
                             bridge_reading=bridge_reading,
                             current_reading=current_reading,
-                            show_ads1115_current=measure_ads1115_current,
                         )
                         if live_display:
                             latest[(board.name, channel)] = (
@@ -679,7 +732,7 @@ def stream(
                                 samples,
                                 data_rate,
                                 output_path,
-                                show_ads1115_current=measure_ads1115_current,
+                                secondary_data_rate,
                             )
                 finally:
                     if channel in INTEGRATOR_CHANNELS and integrator is not None:
@@ -708,13 +761,27 @@ def build_parser() -> argparse.ArgumentParser:
         help="DataRate name, for example SPS_100 or SPS_1000",
     )
     parser.add_argument(
+        "-r2",
+        "--secondary-data-rate",
+        type=parse_data_rate,
+        default=None,
+        metavar="RATE",
+        help=(
+            "optional rate for nonpriority UVIC channels; TIA, TIA_LOWGAIN, "
+            "IVC, and ACF continue to use -r"
+        ),
+    )
+    parser.add_argument(
         "-c",
         "--channels",
         required=True,
         nargs="+",
         type=parse_channel,
         metavar="CHANNEL",
-        help="one or more of: VGND TIA TIA_LOWGAIN ACF IVC board_temp diode_temp",
+        help=(
+            "one or more of: VGND TIA TIA_LOWGAIN ACF IVC board_temp "
+            "diode_temp bridge_temp current"
+        ),
     )
     parser.add_argument(
         "-v",
@@ -756,47 +823,6 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="refresh a readable dashboard in place instead of printing machine-readable rows",
     )
-    parser.add_argument(
-        "--ads1115-bus",
-        default="/dev/i2c-1",
-        metavar="BUS",
-        help="ADS1115 I2C bus number or device path (default: /dev/i2c-1)",
-    )
-    parser.add_argument(
-        "--ads1115-addr",
-        type=parse_int_auto,
-        default=ADS1115_ADDR,
-        metavar="ADDRESS",
-        help="ADS1115 I2C address in decimal or hex (default: 0x4A)",
-    )
-    parser.add_argument(
-        "--ads1115-gain",
-        type=int,
-        choices=sorted(ADS1115_GAIN_FSR),
-        default=2,
-        help="ADS1115 PGA gain for the AIN2-AIN3 bridge (default: 2)",
-    )
-    parser.add_argument(
-        "--ads1115-current",
-        "--measure-ads1115-current",
-        action="store_true",
-        help=(
-            "sample ADS1115 AIN0 and log current through the 2.2 ohm "
-            "current-monitoring resistor"
-        ),
-    )
-    parser.add_argument(
-        "--ads1115-current-gain",
-        type=int,
-        choices=sorted(ADS1115_GAIN_FSR),
-        default=2,
-        help="ADS1115 PGA gain for the single-ended AIN0 current read (default: 2)",
-    )
-    parser.add_argument(
-        "--no-ads1115-temperature",
-        action="store_true",
-        help="disable LED thermistor bridge sampling and leave its CSV fields blank",
-    )
     return parser
 
 
@@ -811,15 +837,6 @@ def main() -> int:
     if args.samples < 0:
         print("error: samples must be zero or greater", file=sys.stderr)
         return 2
-    if not 0 <= args.ads1115_addr <= 0x7F:
-        print("error: ADS1115 address must be between 0x00 and 0x7F", file=sys.stderr)
-        return 2
-    try:
-        ads1115_bus_number = i2c_bus_number(args.ads1115_bus)
-    except ValueError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 2
-
     # Preserve the requested order but avoid sampling a repeated channel twice.
     channels = list(dict.fromkeys(args.channels))
     output_path = args.output or default_output_path()
@@ -843,14 +860,14 @@ def main() -> int:
         # ads124s08Driver constructor is allowed to issue SPI commands.
         io = MCP23017()
         integrator = IntegratorDriver(io)
-        if not args.no_ads1115_temperature or args.ads1115_current:
+        if ADS1115_CHANNELS.intersection(channels):
             import smbus2
 
             bridge_monitor = Ads1115BridgeMonitor(
-                smbus2.SMBus(ads1115_bus_number),
-                address=args.ads1115_addr,
-                gain=args.ads1115_gain,
-                current_gain=args.ads1115_current_gain,
+                smbus2.SMBus(ADS1115_BUS),
+                address=ADS1115_ADDR,
+                gain=ADS1115_BRIDGE_GAIN,
+                current_gain=ADS1115_CURRENT_GAIN,
             )
         boards = open_boards(args.boards, args.bias_voltage)
         stream(
@@ -864,8 +881,7 @@ def main() -> int:
             integrator,
             live_display=live_display,
             bridge_monitor=bridge_monitor,
-            measure_bridge_temperature=not args.no_ads1115_temperature,
-            measure_ads1115_current=args.ads1115_current,
+            secondary_data_rate=args.secondary_data_rate,
         )
     except KeyboardInterrupt:
         print("\nStopped; all completed measurements are saved.")

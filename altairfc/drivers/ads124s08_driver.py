@@ -1,8 +1,8 @@
-import math
 from __future__ import annotations
 
 import ctypes
 import logging
+import math
 from enum import IntEnum
 from dataclasses import dataclass
 from pathlib import Path
