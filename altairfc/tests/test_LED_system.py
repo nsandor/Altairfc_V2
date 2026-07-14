@@ -56,7 +56,7 @@ DEFAULT_LDAC_PIN = 20  # BCM numbering, physical pin 38
 
 # Bridge / thermistor constants (same bridge as test_led_driver_thermistor.py)
 BRIDGE_R = 10000.0
-VEXC = 5.0
+VEXC = 3.3
 THERM_R25 = 10000.0
 THERM_B = 3380.0
 T0_KELVIN = 298.15
