@@ -1,18 +1,22 @@
 """
-LED system integration test: MCP4728 DAC drive + ADS1113 thermistor bridge
+LED system integration test: MCP4728 DAC drive + ADS1115 thermistor bridge
 + ADS1115 single-ended channel monitor, all streamed live.
 
 Sets one MCP4728 output channel (0-3 = A-D) to a fixed DAC code and holds
-it there, then continuously streams three things per LED channel:
+it there, then continuously streams two things per LED channel, both read
+from the same ADS1115 (the ADS1113 previously used for the thermistor
+bridge has been rewired away and is no longer part of this circuit):
 
-  1. The thermistor bridge temperature via the ADS1113 (same Wheatstone
-     bridge/NTC as tests/test_led_driver_thermistor.py and
-     tests/test_photodiode_adc.py — differential AIN0-AIN1, fixed
-     +-2.048V FSR, no MUX/PGA on that chip).
+  1. The thermistor bridge temperature — now read as an ADS1115
+     differential conversion on AIN2-AIN3 (MUX=011), the only ADS1115 MUX
+     setting that pairs AIN3. Same Wheatstone bridge/NTC math as
+     tests/test_led_driver_thermistor.py, just moved off the ADS1113.
   2. The live single-ended voltage on the ADS1115 channel matching the
      MCP4728 channel index (MCP4728 channel 0 -> ADS1115 AIN0, etc.) —
-     see tests/test_ads1115.py for the ADS1115 register-level driver this
-     reuses.
+     see tests/test_ads1115.py for the register-level driver this reuses.
+
+Both reads are one-shot conversions time-multiplexed on the single
+ADS1115, so each streamed line reflects two sequential conversions.
 
 LDAC (BCM 20 / physical pin 38) must be driven LOW for MCP4728 writes to
 reach VOUT immediately, same as tests/test_led_driver_thermistor.py; pass
@@ -32,19 +36,11 @@ import time
 MCP4728_ADDR = 0x60
 MCP4728_MAX_CODE = 4095
 
-ADS1113_ADDR = 0x4B  # thermistor bridge, ADDR pin tied to SCL
-ADS1113_REG_CONVERSION = 0x00
-ADS1113_REG_CONFIG = 0x01
-# Reset value already has OS=1 (start conversion), MODE=1 (single-shot),
-# DR=100b (128 SPS) — doubles as the "start a conversion" write as-is.
-ADS1113_CONFIG_START = 0x8583
-ADS1113_FSR_V = 2.048
-ADS1113_LSB_V = ADS1113_FSR_V / 32768.0  # 62.5 uV, 16-bit signed two's complement
-
 ADS1115_ADDR = 0x4A  # ADDR pin strapped to SDA
 ADS1115_REG_CONVERSION = 0x00
 ADS1115_REG_CONFIG = 0x01
 _ADS1115_MUX_SINGLE = {0: 0b100, 1: 0b101, 2: 0b110, 3: 0b111}
+_ADS1115_MUX_DIFF_2_3 = 0b011  # AIN2-AIN3: thermistor bridge (rewired off the ADS1113)
 _ADS1115_DR_128SPS = 0b100
 _ADS1115_COMP_QUE_DISABLE = 0b11
 _ADS1115_GAIN_FSR = {
@@ -102,26 +98,6 @@ def mcp4728_multi_write_channel(bus, addr, channel, code, vref_vdd=True, gain=1)
     bus.write_i2c_block_data(addr, cmd, [upper, lower])
 
 
-def ads1113_read_single_shot(bus, addr, settle_s=None):
-    """Trigger a single-shot conversion and read back the signed 16-bit differential result."""
-    if settle_s is None:
-        settle_s = (1.0 / 128) * 1.5  # ~1.5x period for 128 SPS default, generous margin
-
-    config_bytes = [(ADS1113_CONFIG_START >> 8) & 0xFF, ADS1113_CONFIG_START & 0xFF]
-    bus.write_i2c_block_data(addr, ADS1113_REG_CONFIG, config_bytes)
-    time.sleep(settle_s)
-
-    raw = bus.read_i2c_block_data(addr, ADS1113_REG_CONVERSION, 2)
-    code = (raw[0] << 8) | raw[1]
-    if code & 0x8000:
-        code -= 1 << 16
-    return code
-
-
-def ads1113_code_to_volts(code):
-    return code * ADS1113_LSB_V
-
-
 def bridge_volts_to_resistance(vdiff, r=BRIDGE_R, vexc=VEXC):
     """TH1 = R * (Vexc/2 + Vdiff) / (Vexc/2 - Vdiff)"""
     half_vexc = vexc / 2.0
@@ -143,10 +119,9 @@ def _ads1115_to_int16(raw):
     return val - 0x10000 if val & 0x8000 else val
 
 
-def ads1115_one_shot_read(bus, addr, channel, gain=2, data_rate=_ADS1115_DR_128SPS):
-    """Trigger a single-ended single-shot conversion on one ADS1115 input and block until ready."""
+def ads1115_one_shot_read_mux(bus, addr, mux_bits, gain=2, data_rate=_ADS1115_DR_128SPS):
+    """Trigger a single-shot conversion on an arbitrary ADS1115 MUX setting and block until ready."""
     pga_bits, _fsr = _ADS1115_GAIN_FSR[gain]
-    mux_bits = _ADS1115_MUX_SINGLE[channel]
 
     cfg = 0
     cfg |= 1 << 15  # OS: start conversion
@@ -182,18 +157,20 @@ def ads1115_code_to_volts(code, gain=2):
 def main():
     parser = argparse.ArgumentParser(
         description="Hold an MCP4728 output channel at a fixed code while streaming the "
-                    "ADS1113 thermistor bridge temperature and the matching ADS1115 channel voltage")
+                    "ADS1115 thermistor bridge temperature (AIN2-AIN3) and the matching "
+                    "ADS1115 single-ended channel voltage")
     parser.add_argument("--channel", type=int, choices=[0, 1, 2, 3], required=True,
                          help="MCP4728 output channel (0-3 = A-D); also selects the ADS1115 "
-                              "input channel to monitor (0->AIN0, 1->AIN1, etc.)")
+                              "single-ended input channel to monitor (0->AIN0, 1->AIN1, etc.)")
     parser.add_argument("--code", type=int, required=True,
                          help="12-bit DAC code (0-4095) to hold on the selected MCP4728 channel")
-    parser.add_argument("--bus", default="/dev/i2c-1", help="Shared I2C device node for all three chips")
+    parser.add_argument("--bus", default="/dev/i2c-1", help="Shared I2C device node for both chips")
     parser.add_argument("--mcp4728-addr", default=hex(MCP4728_ADDR), help="MCP4728 I2C address")
-    parser.add_argument("--ads1113-addr", default=hex(ADS1113_ADDR), help="ADS1113 I2C address")
     parser.add_argument("--ads1115-addr", default=hex(ADS1115_ADDR), help="ADS1115 I2C address")
     parser.add_argument("--ads1115-gain", type=int, choices=sorted(_ADS1115_GAIN_FSR), default=2,
-                         help="ADS1115 PGA gain setting (selects full-scale range)")
+                         help="ADS1115 PGA gain for the single-ended LED-channel read")
+    parser.add_argument("--therm-gain", type=int, choices=sorted(_ADS1115_GAIN_FSR), default=2,
+                         help="ADS1115 PGA gain for the AIN2-AIN3 thermistor-bridge differential read")
     parser.add_argument("--ldac-pin", type=int, default=DEFAULT_LDAC_PIN,
                          help="BCM pin driving LDAC (default: 20 / physical pin 38)")
     parser.add_argument("--no-ldac", action="store_true",
@@ -218,7 +195,6 @@ def main():
         sys.exit(1)
 
     mcp4728_addr = int(args.mcp4728_addr, 0)
-    ads1113_addr = int(args.ads1113_addr, 0)
     ads1115_addr = int(args.ads1115_addr, 0)
 
     try:
@@ -238,25 +214,30 @@ def main():
         sys.exit(1)
 
     ch_letter = chr(ord('A') + args.channel)
+    if args.channel in (2, 3):
+        print(f"[WARN] --channel {args.channel} reads AIN{args.channel} single-ended, which shares "
+              f"a physical pin with the AIN2-AIN3 thermistor bridge — that reading will reflect "
+              f"the bridge node voltage, not an independent signal.")
     print(f"[OK] MCP4728 channel {ch_letter} set to code {args.code}/{MCP4728_MAX_CODE}")
-    print(f"Monitoring ADS1113 at 0x{ads1113_addr:02X} (thermistor bridge, AIN0-AIN1) and "
-          f"ADS1115 at 0x{ads1115_addr:02X} (AIN{args.channel}, single-ended), "
-          f"interval={args.interval}s, Ctrl+C to stop\n")
+    print(f"Monitoring ADS1115 at 0x{ads1115_addr:02X}: thermistor bridge (AIN2-AIN3, differential) "
+          f"and AIN{args.channel} (single-ended), interval={args.interval}s, Ctrl+C to stop\n")
 
     try:
         while True:
             try:
-                therm_code = ads1113_read_single_shot(bus, ads1113_addr)
-                vdiff = ads1113_code_to_volts(therm_code)
+                therm_code = ads1115_one_shot_read_mux(bus, ads1115_addr, _ADS1115_MUX_DIFF_2_3,
+                                                        gain=args.therm_gain)
+                vdiff = ads1115_code_to_volts(therm_code, gain=args.therm_gain)
                 r = bridge_volts_to_resistance(vdiff)
                 t_c = resistance_to_celsius(r)
-            except OSError as e:
-                print(f"[FAIL] ADS1113 read error: {e}")
+            except (OSError, TimeoutError) as e:
+                print(f"[FAIL] Thermistor bridge read error: {e}")
                 time.sleep(args.interval)
                 continue
 
             try:
-                led_code = ads1115_one_shot_read(bus, ads1115_addr, args.channel, gain=args.ads1115_gain)
+                mux_bits = _ADS1115_MUX_SINGLE[args.channel]
+                led_code = ads1115_one_shot_read_mux(bus, ads1115_addr, mux_bits, gain=args.ads1115_gain)
                 led_v = ads1115_code_to_volts(led_code, gain=args.ads1115_gain)
             except (OSError, TimeoutError) as e:
                 print(f"[FAIL] ADS1115 read error: {e}")
