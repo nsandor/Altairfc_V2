@@ -227,10 +227,7 @@ def main():
             try:
                 therm_code = ads1115_one_shot_read_mux(bus, ads1115_addr, _ADS1115_MUX_DIFF_2_3,
                                                         gain=args.therm_gain)
-                # AIN2/AIN3 are swapped relative to the bridge_volts_to_resistance polarity
-                # convention on this rewire (confirmed empirically: R rose while TH1 was heated,
-                # which is backwards for an NTC) — negate to correct it in software.
-                vdiff = -ads1115_code_to_volts(therm_code, gain=args.therm_gain)
+                vdiff = ads1115_code_to_volts(therm_code, gain=args.therm_gain)
                 r = bridge_volts_to_resistance(vdiff)
                 t_c = resistance_to_celsius(r)
             except (OSError, TimeoutError) as e:
