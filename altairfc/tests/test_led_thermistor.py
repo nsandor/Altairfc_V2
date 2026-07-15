@@ -149,7 +149,7 @@ def main():
         sys.exit(1)
 
     print(f"=== TH1 cross-check at 0x{addr:02X} on {args.bus} ===")
-    print("Bridge: AIN2-AIN3 differential (negated to correct AIN2/AIN3 swap, see test_LED_system.py)")
+    print("Bridge: AIN2-AIN3 differential (raw polarity — no sign correction applied)")
     print("Divider: AIN2 single-ended, TH1 high side / 10k low side to GND\n")
     print(f"interval={args.interval}s, Ctrl+C to stop\n")
 
@@ -158,7 +158,7 @@ def main():
             try:
                 bridge_code = ads1115_one_shot_read_mux(bus, addr, _ADS1115_MUX_DIFF_2_3,
                                                          gain=args.therm_gain)
-                vdiff = -ads1115_code_to_volts(bridge_code, gain=args.therm_gain)
+                vdiff = ads1115_code_to_volts(bridge_code, gain=args.therm_gain)
                 r_bridge = bridge_volts_to_resistance(vdiff)
                 t_bridge = resistance_to_celsius(r_bridge)
             except (OSError, TimeoutError) as e:
