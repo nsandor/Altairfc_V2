@@ -245,18 +245,22 @@ class UVICPDRO:
         return self._get_hardware(readout).adc.read_voltage()
 
     def read_board_thermistor(
-        self, readout: Readout
+        self,
+        readout: Readout,
+        data_rate: DataRate = DataRate.SPS_100,
     ) -> ThermistorReading | None:
         """Read the temperature sensor mounted on a PDRO readout path."""
 
-        return self._get_hardware(readout).adc.read_board_thermistor()
+        return self._get_hardware(readout).adc.read_board_thermistor(data_rate)
 
     def read_photodiode_thermistor(
-        self, readout: Readout
+        self,
+        readout: Readout,
+        data_rate: DataRate = DataRate.SPS_100,
     ) -> ThermistorReading | None:
         """Read the photodiode temperature sensor on a readout path."""
 
-        return self._get_hardware(readout).adc.read_pd_thermistor()
+        return self._get_hardware(readout).adc.read_pd_thermistor(data_rate)
 
     def set_bias_voltage(self, readout: Readout, volts: float) -> float:
         """Set a readout's photodiode bias and return the quantized voltage."""

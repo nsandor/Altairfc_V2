@@ -76,6 +76,7 @@ class FakeADC:
         self.start = start
         self.configurations = []
         self.relays = []
+        self.thermistor_rates = []
         self.closed = False
         self.instances.append(self)
         EVENTS.append(("adc.open", cs))
@@ -87,10 +88,12 @@ class FakeADC:
     def read_voltage(self):
         return 1.25
 
-    def read_board_thermistor(self):
+    def read_board_thermistor(self, data_rate=DataRate.SPS_100):
+        self.thermistor_rates.append(("board", data_rate))
         return None
 
-    def read_pd_thermistor(self):
+    def read_pd_thermistor(self, data_rate=DataRate.SPS_100):
+        self.thermistor_rates.append(("photodiode", data_rate))
         return None
 
     def set_relays(self, relays):
@@ -198,6 +201,23 @@ class UVICPDROTests(unittest.TestCase):
                 # One reset after the measurement; context-manager shutdown adds
                 # another after this assertion.
                 self.assertEqual(FakeIntegrator.instances[0].reset_count, 1)
+
+    def test_thermistor_reads_forward_the_selected_data_rate(self):
+        with fake_hardware():
+            with UVICPDRO(readouts=(Readout.SERGEANT,)) as pdro:
+                pdro.read_board_thermistor(
+                    Readout.SERGEANT, DataRate.SPS_50
+                )
+                pdro.read_photodiode_thermistor(
+                    Readout.SERGEANT, DataRate.SPS_200
+                )
+                self.assertEqual(
+                    FakeADC.instances[0].thermistor_rates,
+                    [
+                        ("board", DataRate.SPS_50),
+                        ("photodiode", DataRate.SPS_200),
+                    ],
+                )
 
     def test_close_makes_every_readout_safe_and_is_idempotent(self):
         with fake_hardware():

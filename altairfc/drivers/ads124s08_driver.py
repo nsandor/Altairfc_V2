@@ -260,9 +260,11 @@ class ads124s08Driver:
         """Switch mux to AIN0 single-ended and take one reading, in volts."""
         return self._read_single_shot_volts()
 
-    def read_board_thermistor(self) -> ThermistorReading | None:
+    def read_board_thermistor(
+        self, data_rate: DataRate = DataRate.SPS_100
+    ) -> ThermistorReading | None:
         """Switch mux to board temp sensor and take one reading."""
-        if self._configure(Mux.BOARD_TMP, DataRate.SPS_100) is None:
+        if self._configure(Mux.BOARD_TMP, data_rate) is None:
             return None
         volts = self._read_single_shot_volts()
         if volts is None:
@@ -273,9 +275,11 @@ class ads124s08Driver:
             volts=volts, resistance_ohm=resistance, temperature_c=temperature
         )
 
-    def read_pd_thermistor(self) -> ThermistorReading | None:
+    def read_pd_thermistor(
+        self, data_rate: DataRate = DataRate.SPS_100
+    ) -> ThermistorReading | None:
         """Switch mux to photodiode temp sensor and take one reading."""
-        if self._configure(Mux.PD_TMP, DataRate.SPS_100) is None:
+        if self._configure(Mux.PD_TMP, data_rate) is None:
             return None
         volts = self._read_single_shot_volts()
         if volts is None:

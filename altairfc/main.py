@@ -222,6 +222,15 @@ def main() -> None:
             name="photodiode",
             period_s=config.tasks["photodiode"].period_s,
             datastore=datastore,
+            signal_data_rate=config.tasks["photodiode"].extra.get(
+                "signal_data_rate", "SPS_1000"
+            ),
+            temperature_data_rate=config.tasks["photodiode"].extra.get(
+                "temperature_data_rate", "SPS_100"
+            ),
+            bias_voltage_v=config.tasks["photodiode"].extra.get(
+                "bias_voltage_v", 0.0
+            ),
         )
     )
 
