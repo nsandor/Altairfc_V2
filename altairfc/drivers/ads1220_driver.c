@@ -73,8 +73,6 @@ static int spi_xfer(Ads1220 *dev, uint8_t *buf, int len)
     cs_low(dev);
     int ret = ioctl(dev->fd_spi, SPI_IOC_MESSAGE(1), &xfer);
     cs_high(dev);
-
-    usleep(2);
     return ret < 0 ? -1 : 0;
 }
 
