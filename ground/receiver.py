@@ -168,17 +168,25 @@ class VescPacket:
 
 @dataclass
 class PhotodiodePacket:
-    """Packet ID 0x04 — Photodiode interface HAT."""
+    """Packet ID 0x04 — fixed UVIC PDRO test-campaign measurements."""
     PACKET_ID:    ClassVar[int]          = 0x04
-    STRUCT_FMT:   ClassVar[struct.Struct] = struct.Struct("<ffff")
-    FIELD_NAMES:  ClassVar[tuple]        = ("channel_0", "channel_1",
-                                             "channel_2", "channel_3")
-    UNITS:        ClassVar[tuple]        = ("V", "V", "V", "V")
+    STRUCT_FMT:   ClassVar[struct.Struct] = struct.Struct("<ffffff")
+    FIELD_NAMES:  ClassVar[tuple]        = (
+        "sergeant_tia_low_gain",
+        "soldier_tia_low_gain",
+        "sergeant_board_temperature",
+        "soldier_board_temperature",
+        "sergeant_photodiode_temperature",
+        "soldier_photodiode_temperature",
+    )
+    UNITS:        ClassVar[tuple]        = ("V", "V", "C", "C", "C", "C")
 
-    channel_0: float = 0.0
-    channel_1: float = 0.0
-    channel_2: float = 0.0
-    channel_3: float = 0.0
+    sergeant_tia_low_gain: float = 0.0
+    soldier_tia_low_gain: float = 0.0
+    sergeant_board_temperature: float = 0.0
+    soldier_board_temperature: float = 0.0
+    sergeant_photodiode_temperature: float = 0.0
+    soldier_photodiode_temperature: float = 0.0
 
 
 @dataclass

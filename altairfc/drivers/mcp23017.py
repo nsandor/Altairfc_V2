@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 # Register addresses
 _IODIRA = 0x00
 _IODIRB = 0x01
-_GPIOA  = 0x12
-_GPIOB  = 0x13
+_GPIOA = 0x12
+_GPIOB = 0x13
 
 HIGH = 1
-LOW  = 0
+LOW = 0
 
-DEFAULT_ADDR = 0x24
-DEFAULT_BUS  = 1
+DEFAULT_ADDR = 0x20
+DEFAULT_BUS = 1
 
 
 class MCP23017:
@@ -35,7 +35,7 @@ class MCP23017:
 
     def __init__(self, address: int = DEFAULT_ADDR, bus: int = DEFAULT_BUS) -> None:
         self._addr = address
-        self._bus  = smbus2.SMBus(bus)
+        self._bus = smbus2.SMBus(bus)
         # Shadow registers so we can do read-modify-write without an extra I2C read
         self._iodir = [
             self._bus.read_byte_data(address, _IODIRA),
@@ -93,7 +93,7 @@ class MCP23017:
     def _decode(pin: int) -> tuple[int, int, int]:
         if not 0 <= pin <= 15:
             raise ValueError(f"pin must be 0–15, got {pin}")
-        port = pin >> 3        # 0 for pins 0-7, 1 for pins 8-15
-        bit  = pin & 0x07
+        port = pin >> 3  # 0 for pins 0-7, 1 for pins 8-15
+        bit = pin & 0x07
         mask = 1 << bit
         return port, bit, mask
